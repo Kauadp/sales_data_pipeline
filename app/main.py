@@ -7,9 +7,12 @@ import requests
 
 from .secrets import get_secret
 
-URL_ES_STAND = get_secret("URL_ES_STAND")
-URL_ES_FOOD = get_secret("URL_ES_FOOD")
-URL_RJ_STAND = get_secret("URL_RJ_STAND")
+# Defer reading sheet URLs until runtime so deployed environments
+# (e.g. Streamlit cloud using `st.secrets`) resolve them when the
+# ETL is triggered instead of at import time.
+URL_ES_STAND = None
+URL_ES_FOOD = None
+URL_RJ_STAND = None
 
 COMMON_COLUMNS = [
     "STAND",
@@ -192,10 +195,33 @@ def combinar_planilhas(dataframes):
     return pd.concat(dataframes, ignore_index=True)
 
 
-def run_etl(save_csv: bool = False, csv_path: str = "expositores_combinados.csv") -> pd.DataFrame:
-    df1 = carregar_expositores_es_stand(URL_ES_STAND)
-    df2 = carregar_expositores_es_food(URL_ES_FOOD)
-    df3 = carregar_expositores_rj(URL_RJ_STAND)
+def run_etl(
+    save_csv: bool = False,
+    csv_path: str = "expositores_combinados.csv",
+    url_es_stand: str | None = None,
+    url_es_food: str | None = None,
+    url_rj_stand: str | None = None,
+) -> pd.DataFrame:
+    # Resolve URLs at runtime. If not provided, try to load from configured secrets.
+    url_es_stand = url_es_stand or get_secret("URL_ES_STAND")
+    url_es_food = url_es_food or get_secret("URL_ES_FOOD")
+    url_rj_stand = url_rj_stand or get_secret("URL_RJ_STAND")
+
+    missing = [k for k, v in {
+        "URL_ES_STAND": url_es_stand,
+        "URL_ES_FOOD": url_es_food,
+        "URL_RJ_STAND": url_rj_stand,
+    }.items() if not v]
+
+    if missing:
+        raise ValueError(
+            f"URL(s) da planilha não configurada(s): {', '.join(missing)}."
+            " Verifique secrets.toml ou Streamlit secrets (st.secrets)."
+        )
+
+    df1 = carregar_expositores_es_stand(url_es_stand)
+    df2 = carregar_expositores_es_food(url_es_food)
+    df3 = carregar_expositores_rj(url_rj_stand)
     df = combinar_planilhas([df1, df2, df3])
     if save_csv:
         df.to_csv(csv_path, index=False)

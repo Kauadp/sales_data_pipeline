@@ -38,6 +38,29 @@ def load_secrets() -> Mapping[str, Any]:
 
 
 def get_secret(key: str, section: Optional[str] = None, default: Any = None) -> Any:
+    # Prefer Streamlit's in-memory secrets when available (deployed env).
+    try:
+        import streamlit as _st
+
+        st_secrets = getattr(_st, "secrets", None)
+        if st_secrets:
+            if section:
+                sec = st_secrets.get(section, {})
+                if isinstance(sec, Mapping):
+                    return sec.get(key, default)
+                return default
+
+            if key in st_secrets:
+                return st_secrets.get(key)
+
+            for alt in ("urls", "secrets"):
+                sec = st_secrets.get(alt, {})
+                if isinstance(sec, Mapping) and key in sec:
+                    return sec.get(key)
+    except Exception:
+        # Not running under Streamlit or st.secrets unavailable; fall back to file-based secrets
+        pass
+
     data = load_secrets()
     if section:
         sec = data.get(section, {})
