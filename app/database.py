@@ -45,12 +45,7 @@ def load_toml_file(file_path: Union[str, Path]) -> Mapping:
 
 def get_database_url(streamlit_secrets: Optional[Mapping] = None, config_path: Optional[Union[str, Path]] = None) -> str:
     """Retorna a URL do banco de dados a partir de ambiente, st.secrets, config.toml ou secrets.toml."""
-    db_url = os.getenv(DB_ENV_VAR, "").strip()
-    if db_url:
-        return db_url
-
-    # Lê arquivos TOML locais primeiro, especialmente quando a URI está em secrets.toml.
-    # Além da pasta `app/`, também verifica a raiz do projeto e `dash/config.toml`.
+    # Prioriza arquivos TOML locais (secrets.toml / .streamlit/secrets.toml)
     project_root = Path(__file__).resolve().parents[1]
     local_secret_paths = [
         Path(__file__).resolve().parent / "secrets.toml",
@@ -69,6 +64,11 @@ def get_database_url(streamlit_secrets: Optional[Mapping] = None, config_path: O
 
             if secret_config.get(DB_ENV_VAR):
                 return str(secret_config.get(DB_ENV_VAR)).strip()
+
+    # Em seguida verifica variável de ambiente como fallback
+    db_url = os.getenv(DB_ENV_VAR, "").strip()
+    if db_url:
+        return db_url
 
     if streamlit_secrets is not None:
         try:

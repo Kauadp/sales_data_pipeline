@@ -5,13 +5,11 @@ import numpy as np
 import pandas as pd
 import requests
 
-from dotenv import load_dotenv
+from .secrets import get_secret
 
-load_dotenv()
-
-URL_ES_STAND = os.getenv("URL_ES_STAND")
-URL_ES_FOOD = os.getenv("URL_ES_FOOD")
-URL_RJ_STAND = os.getenv("URL_RJ_STAND")
+URL_ES_STAND = get_secret("URL_ES_STAND")
+URL_ES_FOOD = get_secret("URL_ES_FOOD")
+URL_RJ_STAND = get_secret("URL_RJ_STAND")
 
 COMMON_COLUMNS = [
     "STAND",
