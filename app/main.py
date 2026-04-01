@@ -7,13 +7,6 @@ import requests
 
 from .secrets import get_secret
 
-# Defer reading sheet URLs until runtime so deployed environments
-# (e.g. Streamlit cloud using `st.secrets`) resolve them when the
-# ETL is triggered instead of at import time.
-URL_ES_STAND = None
-URL_ES_FOOD = None
-URL_RJ_STAND = None
-
 COMMON_COLUMNS = [
     "STAND",
     "AREA",
@@ -202,10 +195,16 @@ def run_etl(
     url_es_food: str | None = None,
     url_rj_stand: str | None = None,
 ) -> pd.DataFrame:
-    # Resolve URLs at runtime. If not provided, try to load from configured secrets.
+    
+    # Busca os segredos APENAS se os argumentos forem None
     url_es_stand = url_es_stand or get_secret("URL_ES_STAND")
     url_es_food = url_es_food or get_secret("URL_ES_FOOD")
     url_rj_stand = url_rj_stand or get_secret("URL_RJ_STAND")
+
+    # LOG PARA DEBUG (Aparecerá no log do Streamlit Cloud)
+    print(f"DEBUG: URL_ES_STAND encontrada: {bool(url_es_stand)}")
+    print(f"DEBUG: URL_ES_FOOD encontrada: {bool(url_es_food)}")
+    print(f"DEBUG: URL_RJ_STAND encontrada: {bool(url_rj_stand)}")
 
     missing = [k for k, v in {
         "URL_ES_STAND": url_es_stand,
