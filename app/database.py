@@ -6,7 +6,7 @@ import time
 import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine, Connection
-from db_pipeline import create_postgres_tables
+from .db_pipeline import create_postgres_tables
 
 DB_ENV_VAR = "DATABASE_URL"
 SECRET_SECTION = "postgres"
