@@ -1,0 +1,16 @@
+[theme]
+# Meu Exagerado — Tema Light
+# Extraído da identidade visual do site meuexagerado.com.br
+
+primaryColor        = "#6B3FA0"   # Roxo principal da marca
+backgroundColor     = "#FAFAF8"   # Branco levemente quente (fundo geral)
+secondaryBackgroundColor = "#F2F1EE"  # Cinza claro para sidebars e cards
+textColor           = "#1A1A1A"   # Preto quase puro (leitura)
+font                = "sans serif"
+
+[server]
+headless            = true
+enableCORS          = false
+
+[browser]
+gatherUsageStats    = false

@@ -1,0 +1,9 @@
+# Ambiente e Segredos
+.env
+secrets.toml
+
+# Python Virtual Environment
+venv/
+
+# Dados e Planilhas
+expositores_combinados.csv
