@@ -38,16 +38,21 @@ def load_secrets() -> Mapping[str, Any]:
 
 
 def get_secret(key: str, section: Optional[str] = None, default: Any = None) -> Any:
-    # 1. Tenta via Streamlit (Funciona no Cloud e Local com .streamlit/secrets.toml)
+    import streamlit as st
+    
+    # 1. Tenta direto no st.secrets (Nuvem ou .streamlit/secrets.toml)
     try:
-        import streamlit as st
-        if section:
-            return st.secrets.get(section, {}).get(key, default)
-        return st.secrets.get(key, default)
+        # Se você passou uma seção (ex: 'postgres'), busca dentro dela
+        if section and section in st.secrets:
+            return st.secrets[section].get(key, default)
+        
+        # Se a chave está na "raiz" do secrets
+        if key in st.secrets:
+            return st.secrets[key]
     except Exception:
         pass
 
-    # 2. Fallback para arquivo manual (apenas se o streamlit não estiver rodando)
+    # 2. Se falhar, tenta o seu loader manual (Local)
     data = load_secrets()
     if section:
         return data.get(section, {}).get(key, default)
