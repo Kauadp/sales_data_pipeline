@@ -214,7 +214,22 @@ if snapshot_col is not None and not df.empty:
 # =========================
 receita_realizada = df['RECEITA REALIZADA'].sum()
 receita_prevista = df['RECEITA PREVISTA'].sum()
-descontos_dados = receita_prevista - receita_realizada
+df_desconto = df[df["RECEITA REALIZADA"].notna()]
+
+vendas_reais = df_desconto[
+    (df_desconto['NOME FANTASIA'] != 'VACÂNCIA') & 
+    (df_desconto['RECEITA REALIZADA'] > 0)
+].copy()
+
+vendas_reais['desconto'] = vendas_reais['RECEITA PREVISTA'] - vendas_reais['RECEITA REALIZADA']
+
+vendas_com_desconto = vendas_reais[
+    (vendas_reais['desconto'] > 0) & 
+    (vendas_reais['desconto'] / vendas_reais['RECEITA PREVISTA'] < 1)
+]
+
+descontos_dados = vendas_com_desconto['desconto'].sum()
+
 receita_faltante = meta - receita_realizada
 percentual_faltante = (receita_faltante / meta) * 100 if meta > 0 else 0
 
@@ -239,9 +254,8 @@ media_receita_por_expositor = receita_realizada / qtde_expositores if qtde_expos
 media_desconto_por_expositor = descontos_dados / qtde_expositores if qtde_expositores > 0 else 0
 
 prop_desconto_medio = (
-    (df['RECEITA PREVISTA'] - df['RECEITA REALIZADA'])
-    / df['RECEITA PREVISTA']
-).replace([np.inf, -np.inf], np.nan).mean()
+    (vendas_com_desconto['desconto'] / vendas_com_desconto['RECEITA PREVISTA'])
+).mean() if len(vendas_com_desconto) > 0 else 0
 
 preco_necessario_m2 = receita_faltante / area_disponivel if area_disponivel > 0 else 0
 receita_projetada = receita_realizada + (area_disponivel * receita_por_metro_quadrado)
