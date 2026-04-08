@@ -159,18 +159,18 @@ def normalize_dataframe_for_db(df: pd.DataFrame, id_column: str = "id_expositor"
         if "NOME FANTASIA" not in df.columns:
             raise ValueError("O DataFrame deve conter 'NOME FANTASIA' para construir id_expositor.")
 
-        # Construir `ID_EXPOSITOR` garantindo unicidade para vacâncias.
-        # Quando `NOME FANTASIA` for 'VACÂNCIA' (ou vazio), usar o código de estande (`STAND`) para
-        # gerar uma chave única por posição. Caso `STAND` não exista, cair para o nome fantasia.
+        # Construir `ID_EXPOSITOR` com tolerância a nomes fantasia repetidos.
+        # Quando houver `STAND`, ele passa a compor a chave para qualquer nome fantasia
+        # (incluindo VACÂNCIA), evitando colisões legítimas do mesmo nome em posições distintas.
+        # Se não houver `STAND`, mantém o fallback por nome fantasia.
         def _build_id(row):
             evento = str(row.get("EVENTO", "")).strip().upper()
             nome = str(row.get("NOME FANTASIA", "")).strip().upper()
             stand = str(row.get("STAND", "")).strip().upper()
-            if nome == "VACÂNCIA" or nome == "":
-                if stand:
-                    return f"{evento}|VACANCIA_{stand}"
-                return f"{evento}|VACANCIA"
-            return f"{evento}|{nome}"
+            base_nome = nome if nome else "VACANCIA"
+            if stand:
+                return f"{evento}|{base_nome}_{stand}"
+            return f"{evento}|{base_nome}"
 
         df["ID_EXPOSITOR"] = df.apply(_build_id, axis=1)
 

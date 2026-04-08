@@ -38,6 +38,11 @@ DEFAULT_COLUMN_VALUES = {
 BOOL_TRUE = {"SIM", "S", "TRUE", "1", "RECORRENTE"}
 BOOL_FALSE = {"NAO", "NÃO", "N", "FALSE", "0", "NOVO"}
 
+# Limites superiores exclusivos para uso com iloc[start:end]
+STAND_ES_END_ROW = 174
+FOOD_ES_END_ROW = 42
+STAND_RJ_END_ROW = 102
+
 
 def limpar_valor(valor):
     if valor == "" or pd.isna(valor):
@@ -136,7 +141,7 @@ def carregar_expositores_es_stand(url):
     return preparar_planilha(
         df,
         selected_columns=COMMON_COLUMNS,
-        row_range=(0, 174),
+        row_range=(0, STAND_ES_END_ROW),
         tipo="STAND",
         pipeline="ES_MAIO_26",
         evento="ESPÍRITO SANTO",
@@ -160,7 +165,7 @@ def carregar_expositores_es_food(url):
             "CONTRATO LINK",
             "CATEGORIA",
         ],
-        row_range=(1, 42),
+        row_range=(1, FOOD_ES_END_ROW),
         tipo="FOOD",
         pipeline="ES_MAIO_26",
         evento="ESPÍRITO SANTO",
@@ -173,7 +178,7 @@ def carregar_expositores_rj(url):
     return preparar_planilha(
         df,
         selected_columns=COMMON_COLUMNS,
-        row_range=(0, 102),
+        row_range=(0, STAND_RJ_END_ROW),
         tipo="STAND",
         pipeline="RJ_26",
         evento="RIO DE JANEIRO",
