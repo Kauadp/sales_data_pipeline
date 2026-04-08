@@ -136,7 +136,7 @@ def carregar_expositores_es_stand(url):
     return preparar_planilha(
         df,
         selected_columns=COMMON_COLUMNS,
-        row_range=(1, 173),
+        row_range=(0, 174),
         tipo="STAND",
         pipeline="ES_MAIO_26",
         evento="ESPÍRITO SANTO",
