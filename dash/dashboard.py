@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 from pathlib import Path
 
 # Garante que o diretório do projeto (pai) e a própria pasta `dash/`
@@ -83,7 +83,9 @@ with st.sidebar:
                     _, sync_result = run_etl_and_sync(db_url_to_use)
                     carregar_dados_do_banco.clear()
                     st.success(
-                        f"✅ Dados atualizados: {sync_result['inserted']} inseridos, {sync_result['updated']} atualizados, {sync_result['skipped']} ignorados."
+                        f"✅ Dados atualizados: {sync_result['inserted']} inseridos, "
+                        f"{sync_result['updated']} atualizados, {sync_result['skipped']} ignorados, "
+                        f"{sync_result.get('removed', 0)} removidos do atual (nao estavam no lote)."
                     )
                 except Exception as exc:
                     st.error(f'❌ Falha ao atualizar dados: {exc}')

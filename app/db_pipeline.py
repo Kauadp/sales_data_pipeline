@@ -312,7 +312,7 @@ def sync_expositores(
 
         if not records:
             print("sync_expositores: nenhum registro para inserir (records vazio).")
-            return {"inserted": 0, "updated": 0, "skipped": 0}
+            return {"inserted": 0, "updated": 0, "skipped": 0, "removed": 0}
 
         ids = [row["id_expositor"] for row in records]
         existing_rows = conn.execute(
@@ -361,6 +361,15 @@ def sync_expositores(
         res = conn.execute(upsert_stmt)
         print(f"sync_expositores: upsert executed, result: {res}")
 
+        del_res = conn.execute(
+            sa.text(
+                f"DELETE FROM {TABLE_ATUAL} WHERE NOT (id_expositor = ANY(:ids))"
+            ),
+            {"ids": ids},
+        )
+        removed = del_res.rowcount if del_res.rowcount is not None else -1
+        print(f"sync_expositores: removidos do atual (nao constam no lote): {removed}")
+
         inserted = len([row for row in records if row["id_expositor"] not in existing_hash])
         updated = len([row for row in records if row["id_expositor"] in existing_hash and existing_hash[row["id_expositor"]] != row["hash"]])
         skipped = len(records) - inserted - updated
@@ -391,7 +400,7 @@ def sync_expositores(
             hist_res = conn.execute(expositores_historico.insert(), to_insert_hist)
             print(f"sync_expositores: historico inserido, rows: {len(to_insert_hist)}")
 
-    return {"inserted": inserted, "updated": updated, "skipped": skipped}
+    return {"inserted": inserted, "updated": updated, "skipped": skipped, "removed": removed}
 
 
 if __name__ == "__main__":
