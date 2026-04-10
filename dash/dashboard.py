@@ -35,6 +35,16 @@ st.set_page_config(
 )
 inject_theme()
 
+
+def area_soma_com_receita_realizada(df: pd.DataFrame) -> float:
+    """Soma AREA nas linhas com receita realizada > 0 (venda contando na receita)."""
+    if df.empty or 'AREA' not in df.columns or 'RECEITA REALIZADA' not in df.columns:
+        return 0.0
+    rec = pd.to_numeric(df['RECEITA REALIZADA'], errors='coerce').fillna(0)
+    area = pd.to_numeric(df['AREA'], errors='coerce').fillna(0)
+    return float(area[rec > 0].sum())
+
+
 # =========================
 # CARREGAR DADOS
 # =========================
@@ -239,7 +249,7 @@ qtde_expositores = (df['NOME FANTASIA'] != 'VACÂNCIA').sum()
 vacancias = (df['NOME FANTASIA'] == 'VACÂNCIA').sum()
 
 area_total = df['AREA'].sum()
-area_preenchida = df[df['NOME FANTASIA'] != 'VACÂNCIA']['AREA'].sum()
+area_preenchida = area_soma_com_receita_realizada(df)
 prop_area_preenchida = (area_preenchida / area_total) * 100 if area_total > 0 else 0
 area_disponivel = area_total - area_preenchida
 
@@ -325,7 +335,7 @@ def build_temporal_chart(df, secao, snapshot_col, meta):
         rows = []
         for date, group in df.groupby('snapshot_date'):
             area_total = group['AREA'].sum()
-            area_preenchida = group[group['NOME FANTASIA'] != 'VACÂNCIA']['AREA'].sum()
+            area_preenchida = area_soma_com_receita_realizada(group)
             area_disponivel = area_total - area_preenchida
             rows.append({'snapshot_date': date, 'Área Preenchida': area_preenchida, 'Área Disponível': area_disponivel})
         plot_df = pd.DataFrame(rows)
@@ -337,7 +347,7 @@ def build_temporal_chart(df, secao, snapshot_col, meta):
         rows = []
         for date, group in df.groupby('snapshot_date'):
             receita_real = group['RECEITA REALIZADA'].sum()
-            area_preenchida = group[group['NOME FANTASIA'] != 'VACÂNCIA']['AREA'].sum()
+            area_preenchida = area_soma_com_receita_realizada(group)
             receita_por_m2 = receita_real / area_preenchida if area_preenchida > 0 else 0
             area_total = group['AREA'].sum()
             area_disponivel = area_total - area_preenchida
@@ -529,7 +539,13 @@ elif secao == 'Espaço':
     with col1:
         kpi_card('Área Total', f'{area_total:,.0f} m²', 'Capacidade total', 'neutral', 'purple')
     with col2:
-        kpi_card('Área Preenchida', f'{area_preenchida:,.0f} m²', 'Espaço vendido', 'positive', 'green')
+        kpi_card(
+            'Área Preenchida',
+            f'{area_preenchida:,.0f} m²',
+            'Soma m² onde há receita realizada',
+            'positive',
+            'green',
+        )
     with col3:
         kpi_card('Taxa Ocupação', f'{prop_area_preenchida:.2f}%', 'Ocupação atual', 'positive' if prop_area_preenchida >= 70 else 'negative')
     with col4:
