@@ -130,7 +130,7 @@ with st.sidebar:
 
     secao = st.radio(
         'Seção',
-        ['Comercial', 'Receita', 'Descontos', 'Espaço', 'Previsão', 'Comissionado'],
+        ['Comercial', 'Receita', 'Descontos', 'Espaço', 'Comissionado', 'Previsão'],
         index=0,
         label_visibility='collapsed',
     )
