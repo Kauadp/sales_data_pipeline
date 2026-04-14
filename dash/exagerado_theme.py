@@ -381,11 +381,17 @@ def resumo_estrategico(items):
     item_html = ""
     for item in items:
         dot = dot_colors.get(item.get('type', 'warn'), '#888')
+        value = item.get('value', '')
+        value_html = (
+            f'<span style="font-size:13px;color:rgba(255,255,255,0.72);font-weight:500;margin-left:8px">{value}</span>'
+            if value not in (None, '')
+            else ''
+        )
         item_html += f"""
         <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:rgba(255,255,255,0.8);line-height:1.6;margin-bottom:12px">
             <span style="width:7px;height:7px;border-radius:50%;background:{dot};flex-shrink:0;margin-top:6px;display:inline-block"></span>
             <div>
-                <div style="font-size:14px;color:#FAFAF8;font-weight:600;margin-bottom:4px">{item.get('label', '')}</div>
+                <div style="font-size:14px;color:#FAFAF8;font-weight:600;margin-bottom:4px">{item.get('label', '')}{value_html}</div>
                 <div>{item.get('delta', item.get('text', ''))}</div>
             </div>
         </div>
