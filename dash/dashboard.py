@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 from pathlib import Path
 
 # Garante que o diretório do projeto (pai) e a própria pasta `dash/`
@@ -260,7 +260,7 @@ contratos_enviados = df['CONTRATO ENVIADO'].sum()
 contratos_assinados = df['CONTRATO ASSINADO'].sum()
 to_dentro = df['TO DENTRO'].sum()
 clientes_recorrentes = df['RECORRENTE'].sum()
-clientes_novos = (df['RECORRENTE'] == False).sum()
+clientes_novos = qtde_expositores - clientes_recorrentes
 
 media_receita_por_expositor = receita_realizada / qtde_expositores if qtde_expositores > 0 else 0
 media_desconto_por_expositor = descontos_dados / qtde_expositores if qtde_expositores > 0 else 0
