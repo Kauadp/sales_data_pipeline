@@ -41,7 +41,7 @@ BOOL_FALSE = {"NAO", "NÃO", "N", "FALSE", "0", "NOVO"}
 # Limites superiores exclusivos para uso com iloc[start:end]
 STAND_ES_END_ROW = 175
 FOOD_ES_END_ROW = 42
-STAND_RJ_END_ROW = 102
+STAND_RJ_END_ROW = 89
 
 
 def limpar_valor(valor):
