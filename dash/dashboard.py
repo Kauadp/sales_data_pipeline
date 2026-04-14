@@ -726,11 +726,15 @@ elif secao == 'Comissionado':
             'amber',
         )
 
+    st.markdown('<br>', unsafe_allow_html=True)
+    st.markdown('###')
+    st.markdown('---')
+
     section_header('Resumo Estratégico')
     summary_items = [
         {
             'type': 'ok',
-            'label': 'Percentual de clientes comissionados',
+            'label': 'Percentual de expositores comissionados',
             'value': f'{pct_clientes_comissionados * 100:.2f}%',
             'delta': 'Expositores comissionados sobre o total de expositores ativos.',
         },
@@ -765,7 +769,9 @@ elif secao == 'Comissionado':
             'delta': 'Média simples do percentual de comissão entre os comissionados.',
         },
     ]
-    resumo_estrategico(summary_items)
+
+    if summary_items:
+        resumo_estrategico(summary_items)
 
 elif secao == 'Previsão':
     st.title('Previsão')
