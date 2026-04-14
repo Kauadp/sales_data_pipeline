@@ -752,22 +752,10 @@ elif secao == 'Comissionado':
         },
         {
             'type': 'ok',
-            'label': 'Média de m² dos comissionados vs geral',
-            'value': f'{pct_media_m2_comissionado_vs_geral * 100:.2f}%',
-            'delta': 'Média m² por comissionado comparada à média geral por expositor ativo.',
-        },
-        {
-            'type': 'ok',
             'label': 'Média de receita dos comissionados vs geral',
             'value': f'{pct_media_receita_comissionado_vs_geral * 100:.2f}%',
             'delta': 'Média de receita por comissionado comparada à média geral por expositor ativo.',
-        },
-        {
-            'type': 'ok',
-            'label': 'Média percentual de comissão',
-            'value': f'{media_percentual_comissao * 100:.2f}%',
-            'delta': 'Média simples do percentual de comissão entre os comissionados.',
-        },
+        }
     ]
 
     if summary_items:
