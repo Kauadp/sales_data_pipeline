@@ -17,6 +17,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import unicodedata
 from app.database import get_database_url, load_data_from_db
 from etl_runner import run_etl_and_sync
 from exagerado_theme import (
@@ -43,6 +44,30 @@ def area_soma_com_receita_realizada(df: pd.DataFrame) -> float:
     rec = pd.to_numeric(df['RECEITA REALIZADA'], errors='coerce').fillna(0)
     area = pd.to_numeric(df['AREA'], errors='coerce').fillna(0)
     return float(area[rec > 0].sum())
+
+
+def _normalize_column_name(column_name: str) -> str:
+    normalized = unicodedata.normalize('NFKD', str(column_name)).encode('ascii', 'ignore').decode('ascii')
+    normalized = normalized.strip().lower().replace(' ', '_')
+    return normalized
+
+
+def _resolve_percentual_comissao_column(df: pd.DataFrame) -> str:
+    # Accept common variations: with/without accents, spaces or underscores.
+    accepted = {'percentual_comissao'}
+    for col in df.columns:
+        if _normalize_column_name(col) in accepted:
+            return col
+    return ''
+
+
+def _to_numeric_percentual(series: pd.Series) -> pd.Series:
+    # Supports both numeric values and strings like "0,05".
+    as_str = series.astype(str).str.strip()
+    both_sep = as_str.str.contains(',', regex=False) & as_str.str.contains('.', regex=False)
+    as_str = as_str.where(~both_sep, as_str.str.replace('.', '', regex=False))
+    as_str = as_str.str.replace(',', '.', regex=False)
+    return pd.to_numeric(as_str, errors='coerce').fillna(0)
 
 
 # =========================
@@ -265,11 +290,12 @@ clientes_novos = qtde_expositores - clientes_recorrentes
 media_receita_por_expositor = receita_realizada / qtde_expositores if qtde_expositores > 0 else 0
 media_desconto_por_expositor = descontos_dados / qtde_expositores if qtde_expositores > 0 else 0
 
-percentual_col = 'PERCENTUAL COMISSÃO'
-if percentual_col not in df.columns:
+percentual_col = _resolve_percentual_comissao_column(df)
+if not percentual_col:
+    percentual_col = 'PERCENTUAL COMISSÃO'
     df[percentual_col] = 0
 
-df[percentual_col] = pd.to_numeric(df[percentual_col], errors='coerce').fillna(0)
+df[percentual_col] = _to_numeric_percentual(df[percentual_col])
 df_comissionados = df[
     (df['NOME FANTASIA'] != 'VACÂNCIA') &
     (df[percentual_col] != 0)
@@ -680,6 +706,7 @@ elif secao == 'Previsão':
 elif secao == 'Comissionado':
     st.title('Comissionado')
     section_header('Expositores com comissão ativa e performance', 'Visão Geral')
+    st.caption(f'Coluna de comissão detectada: `{percentual_col}`')
     st.markdown('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:16px 0">', unsafe_allow_html=True)
     st.markdown('###')
 
