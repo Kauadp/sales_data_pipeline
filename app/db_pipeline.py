@@ -1,4 +1,5 @@
 import hashlib
+import unicodedata
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -253,8 +254,10 @@ def sync_expositores(
     )
 
     def _sanitize_key(k: str) -> str:
-        # normalize header keys to snake_case database column names
-        return str(k).strip().lower().replace(" ", "_")
+        # Normalize header keys to ASCII snake_case database column names.
+        # Ex.: "PERCENTUAL COMISSÃO" -> "percentual_comissao"
+        normalized = unicodedata.normalize("NFKD", str(k)).encode("ascii", "ignore").decode("ascii")
+        return normalized.strip().lower().replace(" ", "_")
 
     records = [{_sanitize_key(k): v for k, v in row.items()} for row in records]
 
