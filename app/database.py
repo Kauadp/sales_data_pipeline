@@ -135,6 +135,7 @@ def load_data_from_db(db_url: str, table_name: str = "expositores_atual") -> pd.
         "contrato_enviado": "CONTRATO ENVIADO",
         "cidade": "CIDADE",
         "categoria": "CATEGORIA",
+        "percentual_comissao": "PERCENTUAL COMISSÃO",
         "hash": "HASH",
         "snapshot": "SNAPSHOT",
     }

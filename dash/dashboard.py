@@ -105,7 +105,7 @@ with st.sidebar:
 
     secao = st.radio(
         'Seção',
-        ['Comercial', 'Receita', 'Descontos', 'Espaço', 'Previsão'],
+        ['Comercial', 'Receita', 'Descontos', 'Espaço', 'Previsão', 'Comissionado'],
         index=0,
         label_visibility='collapsed',
     )
@@ -264,6 +264,34 @@ clientes_novos = qtde_expositores - clientes_recorrentes
 
 media_receita_por_expositor = receita_realizada / qtde_expositores if qtde_expositores > 0 else 0
 media_desconto_por_expositor = descontos_dados / qtde_expositores if qtde_expositores > 0 else 0
+
+percentual_col = 'PERCENTUAL COMISSÃO'
+if percentual_col not in df.columns:
+    df[percentual_col] = 0
+
+df[percentual_col] = pd.to_numeric(df[percentual_col], errors='coerce').fillna(0)
+df_comissionados = df[
+    (df['NOME FANTASIA'] != 'VACÂNCIA') &
+    (df[percentual_col] != 0)
+].copy()
+
+qtde_expositores_comissionados = len(df_comissionados)
+area_total_comissionados = pd.to_numeric(df_comissionados['AREA'], errors='coerce').fillna(0).sum()
+media_area_por_expositor_comissionado = (
+    area_total_comissionados / qtde_expositores_comissionados
+    if qtde_expositores_comissionados > 0 else 0
+)
+receita_realizada_comissionados = pd.to_numeric(
+    df_comissionados['RECEITA REALIZADA'], errors='coerce'
+).fillna(0).sum()
+media_receita_por_expositor_comissionado = (
+    receita_realizada_comissionados / qtde_expositores_comissionados
+    if qtde_expositores_comissionados > 0 else 0
+)
+media_percentual_comissao = (
+    df_comissionados[percentual_col].mean()
+    if qtde_expositores_comissionados > 0 else 0
+)
 
 prop_desconto_medio = (
     (vendas_com_desconto['desconto'] / vendas_com_desconto['RECEITA PREVISTA'])
@@ -648,3 +676,59 @@ elif secao == 'Previsão':
 
     if summary_items:
         resumo_estrategico(summary_items)
+
+elif secao == 'Comissionado':
+    st.title('Comissionado')
+    section_header('Expositores com comissão ativa e performance', 'Visão Geral')
+    st.markdown('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:16px 0">', unsafe_allow_html=True)
+    st.markdown('###')
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        kpi_card(
+            'Expositores Comissionados',
+            f'{qtde_expositores_comissionados:,}',
+            'Percentual comissão diferente de zero',
+            'neutral',
+            'purple',
+        )
+    with col2:
+        kpi_card(
+            'Área Total Comissionada',
+            f'{area_total_comissionados:,.0f} m²',
+            'Soma de m² dos comissionados',
+            'neutral',
+            'green',
+        )
+    with col3:
+        kpi_card(
+            'Média m² por Comissionado',
+            f'{media_area_por_expositor_comissionado:,.2f} m²',
+            'Área média por expositor',
+            'neutral',
+        )
+
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        kpi_card(
+            'Receita Realizada Comissionados',
+            f'R$ {receita_realizada_comissionados:,.0f}',
+            'Total realizado pelos comissionados',
+            'positive',
+            'purple',
+        )
+    with col5:
+        kpi_card(
+            'Média Receita por Comissionado',
+            f'R$ {media_receita_por_expositor_comissionado:,.0f}',
+            'Receita média por expositor',
+            'neutral',
+        )
+    with col6:
+        kpi_card(
+            'Média % Comissão',
+            f'{media_percentual_comissao * 100:.2f}%',
+            'Média do percentual de comissão',
+            'neutral',
+            'amber',
+        )
