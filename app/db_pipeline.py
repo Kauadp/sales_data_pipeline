@@ -15,6 +15,7 @@ HASH_COLUMNS = [
     "AREA",
     "RECEITA REALIZADA",
     "RECEITA PREVISTA",
+    "PERCENTUAL COMISSÃO",
     "DESCONTO",
     "TO DENTRO",
     "RECORRENTE",
@@ -55,6 +56,7 @@ def create_postgres_tables(conn_or_engine) -> None:
     contrato_enviado BOOLEAN NOT NULL DEFAULT FALSE,
     cidade VARCHAR(100),
     categoria VARCHAR(100),
+    percentual_comissao NUMERIC(10,6) NOT NULL DEFAULT 0,
     hash CHAR(64) NOT NULL,
     snapshot TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )""",
@@ -76,6 +78,7 @@ def create_postgres_tables(conn_or_engine) -> None:
     contrato_enviado BOOLEAN NOT NULL DEFAULT FALSE,
     cidade VARCHAR(100),
     categoria VARCHAR(100),
+    percentual_comissao NUMERIC(10,6) NOT NULL DEFAULT 0,
     hash CHAR(64) NOT NULL,
     snapshot TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )""",
@@ -187,7 +190,7 @@ def normalize_dataframe_for_db(df: pd.DataFrame, id_column: str = "id_expositor"
         else:
             df[bool_col] = False
 
-    for numeric_col in ["AREA", "RECEITA REALIZADA", "RECEITA PREVISTA", "DESCONTO"]:
+    for numeric_col in ["AREA", "RECEITA REALIZADA", "RECEITA PREVISTA", "DESCONTO", "PERCENTUAL COMISSÃO"]:
         if numeric_col not in df.columns:
             df[numeric_col] = 0
         df[numeric_col] = pd.to_numeric(df[numeric_col], errors="coerce").fillna(0)
@@ -231,6 +234,7 @@ def sync_expositores(
         "AREA",
         "RECEITA REALIZADA",
         "RECEITA PREVISTA",
+        "PERCENTUAL COMISSÃO",
         "DESCONTO",
         "TO DENTRO",
         "RECORRENTE",
@@ -347,6 +351,7 @@ def sync_expositores(
             sa.Column("contrato_enviado", sa.Boolean, nullable=False, default=False),
             sa.Column("cidade", sa.String(100)),
             sa.Column("categoria", sa.String(100)),
+            sa.Column("percentual_comissao", sa.Numeric(10, 6), nullable=False, default=0),
             sa.Column("hash", sa.String(64), nullable=False),
             sa.Column("snapshot", sa.DateTime(timezone=True), nullable=False),
         )
@@ -393,6 +398,7 @@ def sync_expositores(
                 sa.Column("contrato_enviado", sa.Boolean, nullable=False, default=False),
                 sa.Column("cidade", sa.String(100)),
                 sa.Column("categoria", sa.String(100)),
+                sa.Column("percentual_comissao", sa.Numeric(10, 6), nullable=False, default=0),
                 sa.Column("hash", sa.String(64), nullable=False),
                 sa.Column("snapshot", sa.DateTime(timezone=True), nullable=False),
             )

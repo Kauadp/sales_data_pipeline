@@ -13,6 +13,7 @@ COMMON_COLUMNS = [
     "NOME FANTASIA",
     "RECEITA REALIZADA",
     "RECEITA PREVISTA",
+    "PERCENTUAL COMISSÃO",
     "STATUS",
     "CIDADE",
     "RECORRENTE",
@@ -27,6 +28,7 @@ DEFAULT_COLUMN_VALUES = {
     "NOME FANTASIA": "",
     "RECEITA REALIZADA": "0",
     "RECEITA PREVISTA": "0",
+    "PERCENTUAL COMISSÃO": "0",
     "STATUS": "",
     "CIDADE": "",
     "RECORRENTE": "",
@@ -109,7 +111,7 @@ def preparar_planilha(
     df = df.fillna("")
     df = df[[col for col in selected_columns]]
 
-    for amount_col in ["RECEITA REALIZADA", "RECEITA PREVISTA"]:
+    for amount_col in ["RECEITA REALIZADA", "RECEITA PREVISTA", "PERCENTUAL COMISSÃO"]:
         if amount_col in df.columns:
             df[amount_col] = (
                 pd.to_numeric(df[amount_col].apply(limpar_valor), errors="coerce")
@@ -158,6 +160,7 @@ def carregar_expositores_es_food(url):
             "NOME FANTASIA",
             "RECEITA REALIZADA",
             "RECEITA PREVISTA",
+            "PERCENTUAL COMISSÃO",
             "STATUS",
             "CIDADE",
             "RECORRENTE",
