@@ -192,6 +192,17 @@ def carregar_expositores_rj(url):
     )
 
 
+def carregar_expositores_sp(url):
+    df = baixar_planilha_excel(url, sheet_name="BD COMERCIAL")
+    return preparar_planilha(
+        df,
+        selected_columns=COMMON_COLUMNS,
+        tipo="STAND",
+        pipeline="SP_26",
+        evento="SÃO PAULO",
+    )
+
+
 def combinar_planilhas(dataframes):
     return pd.concat(dataframes, ignore_index=True)
 
@@ -202,22 +213,26 @@ def run_etl(
     url_es_stand: str | None = None,
     url_es_food: str | None = None,
     url_rj_stand: str | None = None,
+    url_sp_stand: str | None = None,
 ) -> pd.DataFrame:
     
     # Busca os segredos APENAS se os argumentos forem None
     url_es_stand = url_es_stand or get_secret("URL_ES_STAND")
     url_es_food = url_es_food or get_secret("URL_ES_FOOD")
     url_rj_stand = url_rj_stand or get_secret("URL_RJ_STAND")
+    url_sp_stand = url_sp_stand or get_secret("URL_SP_STAND")
 
     # LOG PARA DEBUG (Aparecerá no log do Streamlit Cloud)
     print(f"DEBUG: URL_ES_STAND encontrada: {bool(url_es_stand)}")
     print(f"DEBUG: URL_ES_FOOD encontrada: {bool(url_es_food)}")
     print(f"DEBUG: URL_RJ_STAND encontrada: {bool(url_rj_stand)}")
+    print(f"DEBUG: URL_SP_STAND encontrada: {bool(url_sp_stand)}")
 
     missing = [k for k, v in {
         "URL_ES_STAND": url_es_stand,
         "URL_ES_FOOD": url_es_food,
         "URL_RJ_STAND": url_rj_stand,
+        "URL_SP_STAND": url_sp_stand,
     }.items() if not v]
 
     if missing:
@@ -229,7 +244,8 @@ def run_etl(
     df1 = carregar_expositores_es_stand(url_es_stand)
     df2 = carregar_expositores_es_food(url_es_food)
     df3 = carregar_expositores_rj(url_rj_stand)
-    df = combinar_planilhas([df1, df2, df3])
+    df4 = carregar_expositores_sp(url_sp_stand)
+    df = combinar_planilhas([df1, df2, df3, df4])
     if save_csv:
         df.to_csv(csv_path, index=False)
     return df

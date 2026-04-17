@@ -38,12 +38,38 @@ inject_theme()
 
 
 def area_soma_com_receita_realizada(df: pd.DataFrame) -> float:
-    """Soma AREA nas linhas com receita realizada > 0 (venda contando na receita)."""
-    if df.empty or 'AREA' not in df.columns or 'RECEITA REALIZADA' not in df.columns:
+    """Soma AREA nas linhas com contrato assinado e receita > 0."""
+    if (
+        df.empty
+        or 'AREA' not in df.columns
+        or 'RECEITA REALIZADA' not in df.columns
+        or 'CONTRATO ASSINADO' not in df.columns
+    ):
         return 0.0
+    assinados = _contrato_assinado_mask(df)
     rec = pd.to_numeric(df['RECEITA REALIZADA'], errors='coerce').fillna(0)
     area = pd.to_numeric(df['AREA'], errors='coerce').fillna(0)
-    return float(area[rec > 0].sum())
+    return float(area[assinados & (rec > 0)].sum())
+
+
+def _contrato_assinado_mask(df: pd.DataFrame) -> pd.Series:
+    if 'CONTRATO ASSINADO' not in df.columns:
+        return pd.Series(False, index=df.index)
+
+    col = df['CONTRATO ASSINADO']
+    if pd.api.types.is_bool_dtype(col):
+        return col.fillna(False)
+
+    normalized = col.astype(str).str.strip().str.upper()
+    return normalized.isin({'TRUE', '1', 'SIM', 'S'})
+
+
+def receita_realizada_assinada(df: pd.DataFrame) -> float:
+    if df.empty or 'RECEITA REALIZADA' not in df.columns:
+        return 0.0
+    assinados = _contrato_assinado_mask(df)
+    rec = pd.to_numeric(df['RECEITA REALIZADA'], errors='coerce').fillna(0)
+    return float(rec[assinados].sum())
 
 
 def _normalize_column_name(column_name: str) -> str:
@@ -249,9 +275,9 @@ if snapshot_col is not None and not df.empty:
 # =========================
 # KPIs
 # =========================
-receita_realizada = df['RECEITA REALIZADA'].sum()
+receita_realizada = receita_realizada_assinada(df)
 receita_prevista = df['RECEITA PREVISTA'].sum()
-df_desconto = df[df["RECEITA REALIZADA"].notna()]
+df_desconto = df[_contrato_assinado_mask(df) & df["RECEITA REALIZADA"].notna()]
 
 vendas_reais = df_desconto[
     (df_desconto['NOME FANTASIA'] != 'VACÂNCIA') & 
@@ -308,7 +334,7 @@ media_area_por_expositor_comissionado = (
     if qtde_expositores_comissionados > 0 else 0
 )
 receita_realizada_comissionados = pd.to_numeric(
-    df_comissionados['RECEITA REALIZADA'], errors='coerce'
+    df_comissionados.loc[_contrato_assinado_mask(df_comissionados), 'RECEITA REALIZADA'], errors='coerce'
 ).fillna(0).sum()
 media_receita_por_expositor_comissionado = (
     receita_realizada_comissionados / qtde_expositores_comissionados
@@ -384,9 +410,20 @@ def build_temporal_chart(df, secao, snapshot_col, meta):
         plot_df = plot_df.melt(id_vars='snapshot_date', var_name='Métrica', value_name='Valor')
 
     elif secao == 'Receita':
-        plot_df = (
-            df.groupby('snapshot_date')[['RECEITA REALIZADA', 'RECEITA PREVISTA']]
+        prevista_por_data = (
+            df.groupby('snapshot_date')['RECEITA PREVISTA']
             .sum()
+            .rename('RECEITA PREVISTA')
+        )
+        realizada_por_data = (
+            df[_contrato_assinado_mask(df)]
+            .groupby('snapshot_date')['RECEITA REALIZADA']
+            .sum()
+            .rename('RECEITA REALIZADA')
+        )
+        plot_df = (
+            pd.concat([realizada_por_data, prevista_por_data], axis=1)
+            .fillna(0)
             .reset_index()
             .melt(id_vars='snapshot_date', var_name='Métrica', value_name='Valor')
         )
@@ -421,7 +458,7 @@ def build_temporal_chart(df, secao, snapshot_col, meta):
     elif secao == 'Previsão':
         rows = []
         for date, group in df.groupby('snapshot_date'):
-            receita_real = group['RECEITA REALIZADA'].sum()
+            receita_real = receita_realizada_assinada(group)
             area_preenchida = area_soma_com_receita_realizada(group)
             receita_por_m2 = receita_real / area_preenchida if area_preenchida > 0 else 0
             area_total = group['AREA'].sum()
