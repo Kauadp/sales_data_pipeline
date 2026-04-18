@@ -2,7 +2,7 @@ import pandas as pd
 import requests
 from io import BytesIO
 
-def get_date(url: str, SHEET_NAME: str, header: int = 0) -> pd.DataFrame:
+def get_data(url: str, SHEET_NAME: str, header: int = 0) -> pd.DataFrame:
 
     headers = {
         "User-Agent": "Mozilla/5.0"

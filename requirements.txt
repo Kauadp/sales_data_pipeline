@@ -1,0 +1,9 @@
+pandas
+numpy
+requests
+toml
+SQLAlchemy
+psycopg2-binary
+streamlit
+plotly
+openpyxl
