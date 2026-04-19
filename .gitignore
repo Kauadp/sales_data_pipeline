@@ -1,2 +1,4 @@
 .streamlit/
 venv
+models/
+.env

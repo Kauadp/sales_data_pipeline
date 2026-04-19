@@ -7,3 +7,9 @@ psycopg2-binary
 streamlit
 plotly
 openpyxl
+pytrends
+matplotlib
+neuralprophet
+scikit-learn
+statsmodels
+python-dotenv
