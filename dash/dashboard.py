@@ -671,7 +671,11 @@ elif secao == 'Forecasting':
         kpi_card(
             'Probabilidade Média',
             f'{forecast_section["prob_media"]:.1f}%',
-            'Média da carteira',
+            (
+                f'Média dos {forecast_section["total_expositores"]} expositores com dados suficientes para avaliação. '
+                f'{forecast_section["total_expositores_base"] - forecast_section["total_expositores"]} '
+                f'expositores sem dados de Trends: receita contabilizada no piso garantido.'
+            ),
             'positive' if forecast_section["prob_media"] >= 60 else 'negative',
         )
  
