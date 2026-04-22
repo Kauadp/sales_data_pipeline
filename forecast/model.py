@@ -1,4 +1,6 @@
 import functools
+import os
+import tempfile
 import numpy as np
 import pandas as pd
 import torch
@@ -12,6 +14,10 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger(__name__)
+
+# Define diretório temporário para produção (evita Permission denied em /home/kau)
+os.environ["TMPDIR"] = tempfile.gettempdir()
+os.environ["HOME"] = tempfile.gettempdir()
 
 # carrega o modelo uma vez só na inicialização do módulo
 # (não a cada request do dash)
