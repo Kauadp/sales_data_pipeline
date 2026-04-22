@@ -13,3 +13,4 @@ neuralprophet
 scikit-learn
 statsmodels
 python-dotenv
+holidays==0.58
