@@ -5,6 +5,7 @@ Aplique no início do seu app com:  inject_theme()
 
 from streamlit.components.v1 import html
 import streamlit as st
+import pandas as pd
 
 def inject_theme():
     st.markdown("""
@@ -89,7 +90,15 @@ def inject_theme():
         background-color: rgba(255,255,255,0.07) !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
         border-radius: 8px !important;
-        color: rgba(255,255,255,0.8) !important;
+    }
+                
+    /* Cor do texto nos selects da Sidebar */
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] div,
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] span {
+        color: rgba(255,255,255,0.85) !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] svg {
+        fill: white !important;
     }
 
     /* Divisor sidebar */
@@ -202,12 +211,21 @@ def inject_theme():
         box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
     }
 
-    /* --- SELECTBOX / INPUTS --- */
+    /* --- SELECTBOX / INPUTS (MAIN) --- */
     .stSelectbox > div > div,
     .stMultiSelect > div > div {
         border: 1px solid var(--ex-border) !important;
         border-radius: 8px !important;
         background-color: var(--ex-white) !important;
+    }
+
+    /* Texto e Seta no Main */
+    [data-testid="stMain"] [data-testid="stSelectbox"] [data-baseweb="select"] div,
+    [data-testid="stMain"] [data-testid="stSelectbox"] [data-baseweb="select"] span {
+        color: var(--ex-black) !important;
+    }
+    [data-testid="stMain"] [data-testid="stSelectbox"] svg {
+        fill: var(--ex-black) !important;
     }
 
     .stSelectbox > div > div:focus-within,
@@ -297,10 +315,34 @@ def inject_theme():
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--ex-gray-mid); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--ex-gray-dark); }
+    
+    /* Slider fora da sidebar */
+    [data-testid="stMain"] .stSlider label,
+    [data-testid="stMain"] .stSlider [data-testid="stTickBar"] {
+        color: var(--ex-black) !important;
+    }
 
     /* --- RODAPÉ HIDE --- */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
+                
+    div[data-baseweb="popover"],
+    div[data-baseweb="menu"] {
+        background-color: var(--ex-white) !important;
+        color: var(--ex-black) !important;
+    }
+
+    /* Itens da lista */
+    div[role="option"] {
+        color: var(--ex-black) !important;
+        background-color: var(--ex-white) !important;
+    }
+
+    /* Hover */
+    div[role="option"]:hover {
+        background-color: var(--ex-purple-light) !important;
+        color: var(--ex-black) !important;
+    }
 
     </style>
     """, unsafe_allow_html=True)
@@ -432,3 +474,135 @@ def sidebar_logo():
     </div>
     <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:0 0 16px">
     """, unsafe_allow_html=True)
+
+def _df_to_html_rows(df: pd.DataFrame, col_labels: dict = None) -> str:
+    """Converte um DataFrame em linhas HTML para uso interno."""
+    cols = list(df.columns)
+    labels = col_labels or {}
+ 
+    header_cells = "".join(
+        f'<th style="'
+        f'padding:10px 14px;'
+        f'font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;'
+        f'color:#6B6963;border-bottom:1px solid rgba(26,26,26,0.08);'
+        f'text-align:left;white-space:nowrap;">'
+        f'{labels.get(c, c)}</th>'
+        for c in cols
+    )
+ 
+    row_html = ""
+    for i, (_, row) in enumerate(df.iterrows()):
+        bg = "#ffffff" if i % 2 == 0 else "#FAFAF8"
+        cells = ""
+        for c in cols:
+            val = row[c]
+            if isinstance(val, float):
+                if c in (col_labels or {}) and "%" in col_labels.get(c, ""):
+                    formatted = f"{val:.1f}%"
+                elif abs(val) >= 10:
+                    formatted = f"R$ {val:,.0f}"
+                else:
+                    formatted = f"{val:.2f}"
+            else:
+                formatted = str(val) if val is not None else "—"
+ 
+            cells += (
+                f'<td style="'
+                f'padding:10px 14px;font-size:13px;color:#1A1A1A;'
+                f'border-bottom:1px solid rgba(26,26,26,0.05);">'
+                f'{formatted}</td>'
+            )
+        row_html += f'<tr style="background:{bg};">{cells}</tr>'
+ 
+    return f"""
+    <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>{header_cells}</tr></thead>
+        <tbody>{row_html}</tbody>
+    </table>
+    """
+ 
+ 
+def table_card(df: pd.DataFrame, col_labels: dict = None, title: str = None):
+    """
+    Renderiza um DataFrame como card branco com borda sutil,
+    igual ao chart_card — sem o tema escuro do st.dataframe.
+ 
+    col_labels: dict mapeando nome_coluna → label exibido
+                ex: {
+                    "nome_fantasia": "Expositor",
+                    "prob_vale_a_pena_pct": "Prob. (%)",
+                    "ganho_real_medio": "Ganho Médio",
+                }
+    """
+    title_html = ""
+    if title:
+        title_html = f"""
+        <div style="
+            font-size:11px;font-weight:600;letter-spacing:1.5px;
+            text-transform:uppercase;color:#6B6963;
+            margin-bottom:14px;
+        ">{title}</div>
+        """
+ 
+    table_html = _df_to_html_rows(df, col_labels)
+    n_rows = len(df)
+    card_height = 56 + (n_rows * 42) + (44 if title else 0) + 24
+ 
+    html(f"""
+    <div style="
+        background:#ffffff;
+        border:1px solid rgba(26,26,26,0.10);
+        border-radius:12px;
+        padding:18px 20px;
+        margin-bottom:16px;
+        overflow-x:auto;
+    ">
+        {title_html}
+        {table_html}
+    </div>
+    """, height=card_height, scrolling=False)
+ 
+ 
+def filter_header():
+    """Renderiza o cabeçalho da área de filtros."""
+    html("""
+    <div style="
+        background:#F2F1EE;
+        border:1px solid rgba(26,26,26,0.08);
+        border-radius:10px;
+        padding:10px 16px;
+        margin-bottom:4px;
+        display:flex;align-items:center;gap:8px;
+    ">
+        <span style="
+            font-size:10px;font-weight:600;
+            letter-spacing:1.5px;text-transform:uppercase;color:#6B6963;
+        ">Filtros</span>
+    </div>
+    """, height=44, scrolling=False)
+ 
+ 
+def priority_header(tipo: str):
+    """
+    Cabeçalho colorido das tabelas de prioridade.
+    tipo: "risco" | "oportunidade"
+    """
+    if tipo == "risco":
+        dot_color, label, sublabel = "#E05A5A", "Maiores Riscos", "— alto ganho, baixa probabilidade"
+    else:
+        dot_color, label, sublabel = "#4CAF87", "Maiores Oportunidades", "— alta probabilidade, alto ganho"
+ 
+    html(f"""
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="
+            width:7px;height:7px;border-radius:50%;
+            background:{dot_color};display:inline-block;flex-shrink:0;
+        "></span>
+        <span style="
+            font-size:11px;font-weight:600;
+            letter-spacing:1.2px;text-transform:uppercase;color:#1A1A1A;
+        ">{label}</span>
+        <span style="font-size:10px;color:#6B6963;">{sublabel}</span>
+    </div>
+    """, height=36, scrolling=False)
+ 

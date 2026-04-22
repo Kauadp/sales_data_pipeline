@@ -5,6 +5,7 @@ import plotly.express as px
 import unicodedata
 import sys
 import os
+from sqlalchemy import create_engine
 
 from exagerado_theme import (
     inject_theme,
@@ -12,13 +13,17 @@ from exagerado_theme import (
     section_header,
     kpi_card,
     chart_card,
-    resumo_estrategico
+    resumo_estrategico,
+    filter_header,
+    table_card,
+    priority_header
 )
 
 
 from data_loader import (
     load_data_atual,
-    load_data_historico
+    load_data_historico,
+    load_forecast_trends,
 )
 
 st.set_page_config(
@@ -64,7 +69,7 @@ with st.sidebar:
 
     secao = st.radio(
         'Seção',
-        ['Comercial', 'Receita', 'Descontos', 'Espaço', 'Comissionado', 'Previsão'],
+        ['Comercial', 'Receita', 'Descontos', 'Espaço', 'Comissionado', 'Previsão', 'Forecasting'],
         index=0,
         label_visibility='collapsed',
     )
@@ -198,6 +203,25 @@ from kpis import (
 )
 
 sixth_section = kpi_sixth_section(df, meta)
+
+# Import para seção forecasting
+
+df_forecast = load_forecast_trends()
+
+from kpis import (
+    kpi_forecast_section,
+    scatter_prob_ganho,
+    bar_ranking_expositores,
+    waterfall_piso_upside,
+    get_filter_options,
+    aplicar_filtros_forecast,
+    get_tabela_forecast,
+    get_tabela_riscos,
+    get_tabela_oportunidades
+    )
+
+forecast_section = kpi_forecast_section(df_forecast)
+
 
 # INÍCIO DO DASH
 
@@ -520,14 +544,14 @@ elif secao == 'Previsão':
     with col1:
         kpi_card(
             'Receita Projetada',
-            f'R$ {sixth_section['receita_projetada']:,.0f}',
+            f'R$ {sixth_section["receita_projetada"]:,.0f}',
             'Cenário atual',
             'neutral',
             'purple')
     with col2:
         kpi_card(
             'Preço Necessário por m²',
-            f'R$ {sixth_section['preco_necessario_m2']:,.0f}',
+            f'R$ {sixth_section["preco_necessario_m2"]:,.0f}',
             'Valor necessário',
             'negative' if sixth_section['preco_necessario_m2'] > fourth_section['receita_por_metro_quadrado'] else 'positive')
     with col3:
@@ -549,30 +573,235 @@ elif secao == 'Previsão':
         summary_items.append({
             'type': 'warn',
             'label': 'Preço médio por m² abaixo do necessário',
-            'value': f'R$ {fourth_section['receita_por_metro_quadrado']:,.0f}',
+            'value': f'R$ {fourth_section["receita_por_metro_quadrado"]:,.0f}',
             'delta': 'Será necessário vender os espaços restantes por um valor maior.',
         })
     if third_section['prop_desconto_medio'] > 0.15:
         summary_items.append({
             'type': 'warn',
             'label': 'Desconto médio elevado',
-            'value': f'{third_section['prop_desconto_medio']*100:.2f}%',
+            'value': f'{third_section["prop_desconto_medio"]*100:.2f}%',
             'delta': 'O desconto pode estar reduzindo a receita total.',
         })
     if fourth_section['prop_area_preenchida'] < 70:
         summary_items.append({
             'type': 'ok',
             'label': 'Área disponível ainda positiva',
-            'value': f'{fourth_section['prop_area_preenchida']:.2f}%',
+            'value': f'{fourth_section["prop_area_preenchida"]:.2f}%',
             'delta': 'Focar em ocupação pode aumentar a receita.',
         })
     if first_section['contratos_assinados'] / first_section['contratos_enviados'] < 0.5:
         summary_items.append({
             'type': 'alert',
             'label': 'Assinatura de contratos baixa',
-            'value': f'{(first_section['contratos_assinados'] / first_section['contratos_enviados'] * 100) if first_section['contratos_enviados'] else 0:.0f}%',
+            'value': f'{(first_section["contratos_assinados"] / first_section["contratos_enviados"] * 100) if first_section["contratos_enviados"] else 0:.0f}%',
             'delta': 'Pode ser necessário follow-up comercial.',
         })
 
     if summary_items:
         resumo_estrategico(summary_items)
+
+elif secao == 'Forecasting':
+    st.title('Forecasting')
+    if evento != "Rio de Janeiro":
+        section_header(
+            'Carteira de expositores comissionados — cenário de receita e risco',
+            'Seção Apenas Disponível Para Funil do Rio de Janeiro.'
+        )
+    else:
+        section_header(
+            'Carteira de expositores comissionados — cenário de receita e risco',
+            'Visão Geral'
+        )
+    st.markdown('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:16px 0">', unsafe_allow_html=True)
+    st.markdown('###')
+ 
+ 
+    if df_forecast.empty:
+        st.info("Sem simulações salvas ainda. Execute o pipeline para gerar os dados de forecasting.")
+        st.stop()
+ 
+    st.markdown('###')
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        kpi_card(
+            'Total de Ganho Real da Comissão - Valor Estimado',
+            f'R$ {forecast_section['ganho_real_total']:,.0f}',
+            f'Receita Total Real Por Expositor Avaliado Com Média R$ {forecast_section['ganho_real_medio']:,.0f}',
+            'negative' if forecast_section['ganho_real_total'] < 0 else 'positive',
+            'red' if forecast_section['ganho_real_total'] <0 else 'green',
+        )
+    with col2:
+        kpi_card(
+                'Percentual Comissões Que Valeram A Pena',
+                f'{forecast_section['pct_valeu_a_pena']:,.2f}%',
+                f'Para {forecast_section['count_valeu_a_pena']:,.0f} Comissões que Valeram A Pena',
+                'neutral'
+            )
+ 
+    st.markdown('###')
+ 
+    # ── 2. KPIs SECUNDÁRIOS ───────────────────────────────────────────────────
+    col3, col4, col5, col6 = st.columns(4)
+    with col3:
+        kpi_card(
+            'Expositores Avaliados',
+            f'{forecast_section["total_expositores"]:,}',
+            f'Base da carteira de {forecast_section['total_expositores_base']:.0f} No Banco',
+            'neutral',
+            'purple',
+        )
+    with col4:
+        kpi_card(
+            'Piso Garantido',
+            f'R$ {forecast_section["piso_total"]:,.0f}',
+            'Soma dos mínimos garantidos — já está no bolso',
+            'positive',
+            'green',
+        )
+    with col5:
+        kpi_card(
+            'Upside Potencial',
+            f'R$ {forecast_section["upside_total"]:,.0f}',
+            'Acima do piso no cenário otimizado',
+            'neutral',
+            'amber',
+        )
+    with col6:
+        kpi_card(
+            'Probabilidade Média',
+            f'{forecast_section["prob_media"]:.1f}%',
+            'Média da carteira',
+            'positive' if forecast_section["prob_media"] >= 60 else 'negative',
+        )
+ 
+    st.markdown('###')
+    st.markdown('---')
+ 
+    # ── 3. SCATTER: prob × ganho ──────────────────────────────────────────────
+    section_header('Mapa de Prioridades da Carteira')
+   
+    fig_scatter = scatter_prob_ganho(df_forecast)
+    chart_card('Probabilidade vs Ganho Real Médio', fig_scatter)
+ 
+    st.markdown('###')
+    st.markdown('---')
+ 
+    # ── 4. WATERFALL + RANKING ────────────────────────────────────────────────
+    section_header('Composição da Receita e Ranking de Expositores')
+ 
+    col_wf, col_rank = st.columns(2)
+    with col_wf:
+        fig_wf = waterfall_piso_upside(forecast_section)
+        chart_card('Piso Garantido → Upside → Receita Otimizada', fig_wf)
+ 
+    with col_rank:
+        fig_rank = bar_ranking_expositores(df_forecast, top_n=10)
+        chart_card('Top 10 por Receita Otimizada', fig_rank)
+ 
+    st.markdown('###')
+    st.markdown('---')
+ 
+    # ── 6. TABELA DETALHADA (drill-down) ──────────────────────────────────────
+    COL_LABELS_FORECAST = {
+        "nome_fantasia":          "Expositor",
+        "porte":                  "Porte",
+        "status_decisao":         "Status",
+        "prob_vale_a_pena_pct":   "Prob. (%)",
+        "ganho_real_medio":       "Ganho Médio",
+        "minimo_garantido":       "Piso Garantido",
+        "receita_estimada_media": "Receita Estimada",
+        "receita_otimizada":      "Receita Otimizada",
+        "modelo_origem":          "Modelo",
+    }
+    
+    COL_LABELS_PRIORIDADE = {
+        "nome_fantasia":        "Expositor",
+        "prob_vale_a_pena_pct": "Prob. (%)",
+        "ganho_real_medio":     "Ganho Médio",
+        "status_decisao":       "Status",
+    }
+    
+    # ── Tabela Detalhada ──────────────────────────────────────────────────────────
+    section_header('Tabela Detalhada por Expositor')
+    
+    opcoes = get_filter_options(df_forecast)
+    
+    col_f1, col_f2, col_f3 = st.columns(3)
+    with col_f1:
+        filtro_status = st.selectbox("Status", opcoes["status_opcoes"], key="fc_status")
+    with col_f2:
+        prob_min = st.slider("Prob. mínima (%)", opcoes["prob_min"], opcoes["prob_max"], opcoes["prob_min"], key="fc_prob")
+    with col_f3:
+        ordenar_por = st.selectbox("Ordenar por", opcoes["colunas_ordenacao"], key="fc_order")
+    
+    df_filtrado = aplicar_filtros_forecast(df_forecast, filtro_status, prob_min, ordenar_por)
+    table_card(get_tabela_forecast(df_filtrado), col_labels=COL_LABELS_FORECAST)
+    
+    # ── Prioridades da Gestão ─────────────────────────────────────────────────────
+    st.markdown('###')
+    section_header('Prioridades da Gestão')
+    
+    col_risco, col_opp = st.columns(2)
+    with col_risco:
+        priority_header("risco")
+        table_card(get_tabela_riscos(df_forecast), col_labels=COL_LABELS_PRIORIDADE)
+    
+    with col_opp:
+        priority_header("oportunidade")
+        table_card(get_tabela_oportunidades(df_forecast), col_labels=COL_LABELS_PRIORIDADE)
+
+
+ 
+    # ── 5. RESUMO ESTRATÉGICO ─────────────────────────────────────────────────
+    section_header('Resumo Estratégico')
+    items_resumo = []
+ 
+    # 2. Expositores críticos (alto ganho + baixa prob)
+    if forecast_section["qtde_criticos"] > 0:
+        items_resumo.append({
+            "type": "alert",
+            "label": f"{forecast_section['qtde_criticos']} expositor(es) crítico(s): alto ganho, baixa probabilidade",
+            "value": f"{forecast_section['qtde_criticos']} expositor(es)",
+            "delta": "Merecem atenção comercial imediata — são os que mais impactam se não converterem.",
+        })
+ 
+    # 3. Probabilidade média da carteira
+    prob = forecast_section["prob_media"]
+    if prob >= 70:
+        items_resumo.append({
+            "type": "ok",
+            "label": "Probabilidade média da carteira saudável",
+            "value": f"{prob:.1f}%",
+            "delta": "A maioria dos expositores tem boa chance de retorno.",
+        })
+    elif prob >= 50:
+        items_resumo.append({
+            "type": "warn",
+            "label": "Probabilidade média moderada",
+            "value": f"{prob:.1f}%",
+            "delta": "Parte da carteira ainda está em zona de incerteza.",
+        })
+    else:
+        items_resumo.append({
+            "type": "alert",
+            "label": "Probabilidade média baixa na carteira",
+            "value": f"{prob:.1f}%",
+            "delta": "A maioria dos expositores está abaixo de 50% de chance de valer a pena.",
+        })
+ 
+    # 4. Upside vs piso
+    pct_upside = (forecast_section["upside_total"] / forecast_section["piso_total"] * 100) if forecast_section["piso_total"] > 0 else 0
+    items_resumo.append({
+        "type": "ok" if pct_upside > 30 else "warn",
+        "label": "Upside potencial sobre o piso garantido",
+        "value": f"{pct_upside:.1f}%",
+        "delta": f"R$ {forecast_section['upside_total']:,.0f} acima do mínimo garantido no melhor cenário.",
+    })
+    if items_resumo:
+        resumo_estrategico(items_resumo)
+ 
+    st.markdown('###')
+    st.markdown('---')
+
+    

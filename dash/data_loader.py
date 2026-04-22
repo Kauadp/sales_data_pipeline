@@ -11,3 +11,8 @@ def load_data_atual():
 def load_data_historico():
     engine = create_engine(st.secrets["postgres"]["url"])
     return pd.read_sql("SELECT * FROM expositores_historico", engine)
+
+@st.cache_data
+def load_forecast_trends():
+    engine = create_engine(st.secrets["postgres"]["url"])
+    return pd.read_sql("SELECT * FROM forecast_trends_cache", engine)

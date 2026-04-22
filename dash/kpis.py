@@ -357,3 +357,319 @@ def kpi_sixth_section(df: pd.DataFrame, meta: int):
         'preco_necessario_m2': preco_necessario_m2,
         'bate_meta': bate_meta
     }
+
+
+####### KPIS E GRÁFICOS FORECASTING ######
+
+import plotly.graph_objects as go
+ 
+ 
+def kpi_forecast_section(df: pd.DataFrame):
+    """
+    KPIs executivos do forecasting.
+    Retorna dict com todos os valores necessários para o dashboard.
+    """
+
+    total_expositores = len(df[df["modelo_origem"] != "SEM DADOS TRENDS"])
+ 
+    # Receita base (piso garantido, independe de comissão)
+    piso_total = df["minimo_garantido"].sum()
+ 
+    # Receita esperada no cenário base (mediana da simulação MC)
+    receita_estimada_total = df["receita_estimada_media"].sum()
+ 
+    # Receita no cenário otimizado
+    receita_otimizada_total = df["receita_otimizada"].sum()
+ 
+    # Upside: quanto ainda está "em jogo" acima do piso
+    upside_total = receita_otimizada_total - piso_total
+ 
+    # Probabilidade média da carteira
+    prob_media = (df[df["modelo_origem"] != "SEM DADOS TRENDS"]["prob_vale_a_pena_pct"]).mean()
+
+    # Ganho Real Médio
+
+    ganho_real_medio = df['ganho_real_medio'].mean()
+    ganho_real_total = df['ganho_real_medio'].sum()
+ 
+    # Percentual quantos valeram a pena
+    total_expositores_base = len(df)
+
+    count_valeu_a_pena = (df["status_decisao"] != "Comissão Não Vale A Pena").sum()
+
+    pct_valeu_a_pena = count_valeu_a_pena / total_expositores_base
+
+    # Distribuição de status
+    status_counts = (df[df["modelo_origem"] != "SEM DADOS TRENDS"]["status_decisao"]).value_counts().to_dict()
+ 
+    # Expositores críticos: alta influência + baixa probabilidade
+    # "Alta influência" = ganho_real_medio acima da mediana
+    mediana_ganho = (df[df["modelo_origem"] != "SEM DADOS TRENDS"])["ganho_real_medio"].median()
+    criticos = (df[df["modelo_origem"] != "SEM DADOS TRENDS"])[
+        ((df[df["modelo_origem"] != "SEM DADOS TRENDS"])["ganho_real_medio"] > mediana_ganho) &
+        ((df[df["modelo_origem"] != "SEM DADOS TRENDS"])["prob_vale_a_pena_pct"] < 50)
+    ]
+    qtde_criticos = len(criticos)
+    
+    meta_comissao = df["meta_total"].sum()
+
+    
+    return {
+        "total_expositores": total_expositores,
+        "piso_total": piso_total,
+        "receita_estimada_total": receita_estimada_total,
+        "receita_otimizada_total": receita_otimizada_total,
+        "upside_total": upside_total,
+        "prob_media": prob_media,
+        "ganho_real_medio": ganho_real_medio,
+        "ganho_real_total": ganho_real_total,
+        "count_valeu_a_pena": count_valeu_a_pena,
+        "pct_valeu_a_pena": pct_valeu_a_pena,
+        "total_expositores_base": total_expositores_base,
+        "status_counts": status_counts,
+        "qtde_criticos": qtde_criticos,
+        "meta_comissao": meta_comissao
+    }
+ 
+ 
+def scatter_prob_ganho(df: pd.DataFrame):
+    """
+    Scatter: Probabilidade de valer a pena (x) vs Ganho Real Médio (y).
+    Quadrantes definem prioridades comerciais.
+    """
+    df = df.copy()
+ 
+    mediana_prob = df["prob_vale_a_pena_pct"].median()
+    mediana_ganho = df["ganho_real_medio"].median()
+ 
+    # Cor por quadrante
+    def quadrante(row):
+        alta_prob = row["prob_vale_a_pena_pct"] >= mediana_prob
+        alto_ganho = row["ganho_real_medio"] >= mediana_ganho
+        if alta_prob and alto_ganho:
+            return "Prioridade Máxima"
+        elif not alta_prob and alto_ganho:
+            return "Risco Alto"
+        elif alta_prob and not alto_ganho:
+            return "Seguro / Pequeno"
+        else:
+            return "Reconsiderar"
+ 
+    df["quadrante"] = df.apply(quadrante, axis=1)
+ 
+    color_map = {
+        "Prioridade Máxima": "#6B3FA0",
+        "Risco Alto": "#E040FB",
+        "Seguro / Pequeno": "#9B6FCC",
+        "Reconsiderar": "#555566",
+    }
+ 
+    fig = px.scatter(
+        df,
+        x="prob_vale_a_pena_pct",
+        y="ganho_real_medio",
+        color="quadrante",
+        hover_name="nome_fantasia",
+        hover_data={"status_decisao": True, "prob_vale_a_pena_pct": ":.1f", "ganho_real_medio": ":,.0f"},
+        color_discrete_map=color_map,
+        labels={
+            "prob_vale_a_pena_pct": "Probabilidade (%)",
+            "ganho_real_medio": "Ganho Real Médio (R$)",
+            "quadrante": "Quadrante",
+        },
+    )
+ 
+    # Linhas de medianas (divisores de quadrante)
+    fig.add_vline(x=mediana_prob, line_dash="dash", line_color="rgba(255,255,255,0.2)", line_width=1)
+    fig.add_hline(y=mediana_ganho, line_dash="dash", line_color="rgba(255,255,255,0.2)", line_width=1)
+ 
+    fig.update_traces(marker=dict(size=10, opacity=0.85))
+    fig.update_layout(
+        legend=dict(orientation="h", y=-0.2),
+        xaxis_title="Probabilidade de Valer a Pena (%)",
+        yaxis_title="Ganho Real Médio (R$)",
+    )
+    return fig
+ 
+ 
+def bar_ranking_expositores(df: pd.DataFrame, top_n: int = 10):
+    """
+    Bar chart horizontal: top N expositores por receita otimizada,
+    com cor indicando o status da decisão.
+    """
+    df_top = (
+        df.sort_values("receita_otimizada", ascending=False)
+        .head(top_n)
+        .copy()
+    )
+    # Ordena para o bar horizontal ficar crescente (maior no topo)
+    df_top = df_top.sort_values("receita_otimizada", ascending=True)
+ 
+    color_map = {
+        "APROVADO": "#6B3FA0",
+        "EM ANÁLISE": "#E040FB",
+        "REPROVADO": "#555566",
+    }
+ 
+    # Fallback: usa status como está no campo
+    colors = [
+        color_map.get(str(s).upper(), "#9B6FCC")
+        for s in df_top["status_decisao"]
+    ]
+ 
+    fig = go.Figure(go.Bar(
+        x=df_top["receita_otimizada"],
+        y=df_top["nome_fantasia"],
+        orientation="h",
+        marker_color=colors,
+        text=df_top["receita_otimizada"].apply(lambda v: f"R$ {v:,.0f}"),
+        textposition="outside",
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Receita Otimizada: R$ %{x:,.0f}<br>"
+            "<extra></extra>"
+        ),
+    ))
+ 
+    fig.update_layout(
+        xaxis_title="Receita Otimizada (R$)",
+        yaxis_title="",
+        margin=dict(l=10, r=60),
+    )
+    return fig
+ 
+ 
+def waterfall_piso_upside(kpis: dict):
+    """
+    Waterfall: piso garantido → + upside → receita estimada.
+    Mostra visivelmente o que já está no bolso e o que ainda depende de performance.
+    """
+    piso = kpis["piso_total"]
+    upside = kpis["upside_total"]
+    meta = kpis["meta_comissao"]
+    estimada = kpis["receita_estimada_total"]
+ 
+    fig = go.Figure(go.Waterfall(
+        orientation="v",
+        measure=["absolute", "relative", "total"],
+        x=["Piso Garantido", "Upside Potencial", "Receita Estimada"],
+        y=[piso, upside, estimada],
+        text=[f"R$ {piso:,.0f}", f"+ R$ {upside:,.0f}", f"R$ {estimada:,.0f}"],
+        textposition="outside",
+        connector={"line": {"color": "rgba(255,255,255,0.15)"}},
+        increasing={"marker": {"color": "#6B3FA0"}},
+        totals={"marker": {"color": "#9B6FCC"}},
+        decreasing={"marker": {"color": "#E040FB"}},
+    ))
+ 
+    # Linha da meta
+    fig.add_hline(
+        y=meta,
+        line_dash="dot",
+        line_color="#F48FB1",
+        line_width=2,
+        annotation_text=f"Meta: R$ {meta:,.0f}",
+        annotation_position="top right",
+        annotation_font_color="#F48FB1",
+    )
+ 
+    fig.update_layout(
+        showlegend=False,
+        yaxis_title="Receita (R$)",
+    )
+    return fig
+ 
+def get_filter_options(df: pd.DataFrame) -> dict:
+    status_opcoes = ["Todos"] + sorted(
+        df["status_decisao"].dropna().unique().tolist()
+    )
+    prob_min = float(df["prob_vale_a_pena_pct"].min())
+    prob_max = float(df["prob_vale_a_pena_pct"].max())
+
+    # Garante que min < max mesmo quando todos os valores são iguais
+    if prob_min >= prob_max:
+        prob_min = 0.0
+        prob_max = 100.0
+
+    colunas_ordenacao = [
+        "receita_otimizada",
+        "prob_vale_a_pena_pct",
+        "ganho_real_medio",
+        "minimo_garantido",
+    ]
+
+    return {
+        "status_opcoes": status_opcoes,
+        "prob_min": prob_min,
+        "prob_max": prob_max,
+        "colunas_ordenacao": colunas_ordenacao,
+    }
+ 
+ 
+def aplicar_filtros_forecast(
+    df: pd.DataFrame,
+    filtro_status: str,
+    prob_min: float,
+    ordenar_por: str,
+) -> pd.DataFrame:
+    """
+    Aplica os filtros da seção Forecasting e retorna o df filtrado e ordenado.
+    """
+    df = df.copy()
+ 
+    if filtro_status != "Todos":
+        df = df[df["status_decisao"] == filtro_status]
+ 
+    df = df[df["prob_vale_a_pena_pct"] >= prob_min]
+    df = df.sort_values(ordenar_por, ascending=False)
+ 
+    return df
+ 
+ 
+def get_tabela_forecast(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Seleciona e ordena as colunas para exibição na tabela detalhada.
+    """
+    colunas = [
+        "nome_fantasia",
+        "porte",
+        "status_decisao",
+        "prob_vale_a_pena_pct",
+        "ganho_real_medio",
+        "minimo_garantido",
+        "receita_estimada_media",
+        "receita_otimizada",
+        "modelo_origem",
+    ]
+    return df[[c for c in colunas if c in df.columns]]
+ 
+ 
+def get_tabela_riscos(df: pd.DataFrame, top_n: int = 5) -> pd.DataFrame:
+    """
+    Retorna os expositores com maior risco:
+    ganho acima da mediana + menor probabilidade.
+    """
+    mediana_ganho = df["ganho_real_medio"].median()
+    colunas = ["nome_fantasia", "prob_vale_a_pena_pct", "ganho_real_medio", "status_decisao"]
+ 
+    return (
+        df[df["ganho_real_medio"] > mediana_ganho]
+        .sort_values("prob_vale_a_pena_pct", ascending=True)
+        .head(top_n)
+        [[c for c in colunas if c in df.columns]]
+    )
+ 
+ 
+def get_tabela_oportunidades(df: pd.DataFrame, top_n: int = 5) -> pd.DataFrame:
+    """
+    Retorna os expositores com maior oportunidade:
+    maior probabilidade + maior ganho.
+    """
+    colunas = ["nome_fantasia", "prob_vale_a_pena_pct", "ganho_real_medio", "status_decisao"]
+ 
+    return (
+        df
+        .sort_values(["prob_vale_a_pena_pct", "ganho_real_medio"], ascending=False)
+        .head(top_n)
+        [[c for c in colunas if c in df.columns]]
+    )
