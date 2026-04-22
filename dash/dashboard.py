@@ -674,7 +674,7 @@ elif secao == 'Forecasting':
             (
                 f'Média dos {forecast_section["total_expositores"]} expositores com dados suficientes para avaliação. '
                 f'{forecast_section["total_expositores_base"] - forecast_section["total_expositores"]} '
-                f'expositores sem dados de Trends: receita contabilizada no piso garantido.'
+                f'expositores sem dados de Trends.'
             ),
             'positive' if forecast_section["prob_media"] >= 60 else 'negative',
         )
