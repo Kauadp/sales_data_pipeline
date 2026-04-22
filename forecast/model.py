@@ -3,6 +3,15 @@ import numpy as np
 import pandas as pd
 import torch
 from neuralprophet import load as np_load
+import logging
+
+# Configuração de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 
 # carrega o modelo uma vez só na inicialização do módulo
 # (não a cada request do dash)
@@ -10,10 +19,10 @@ torch.load = functools.partial(torch.load, weights_only=False)
 
 try:
     MODEL_OTIMO = np_load("models/model_otimo.np")
-    print("[MODEL] model_otimo.np carregado com sucesso")
+    logger.info("[MODEL] model_otimo.np carregado com sucesso")
 except Exception as e:
     MODEL_OTIMO = None
-    print(f"[MODEL] Aviso: não foi possível carregar model_otimo.np — {e}")
+    logger.error(f"[MODEL] Aviso: não foi possível carregar model_otimo.np — {e}")
 
 
 def croston(series: np.ndarray, alpha: float = 0.2) -> float:
@@ -21,10 +30,12 @@ def croston(series: np.ndarray, alpha: float = 0.2) -> float:
     Método de Croston para séries intermitentes.
     Retorna a previsão de um passo à frente.
     """
+    logger.info(f"[CROSTON] Iniciando com alpha={alpha}, series_len={len(series)}")
     demand = np.array(series)
     nonzero = demand[demand > 0]
 
     if len(nonzero) == 0:
+        logger.warning("[CROSTON] Nenhum valor não-zero encontrado, retornando 0.0")
         return 0.0
 
     indices = np.where(demand > 0)[0]
@@ -38,7 +49,9 @@ def croston(series: np.ndarray, alpha: float = 0.2) -> float:
         if i - 1 < len(p):
             q = alpha * p[i - 1] + (1 - alpha) * q
 
-    return a / q if q > 0 else 0.0
+    result = a / q if q > 0 else 0.0
+    logger.info(f"[CROSTON] Resultado: {result}")
+    return result
 
 
 def _preparar_df(df_trends: pd.DataFrame, id_expositor: str) -> pd.DataFrame:
@@ -47,6 +60,7 @@ def _preparar_df(df_trends: pd.DataFrame, id_expositor: str) -> pd.DataFrame:
     renomeia colunas, garante frequência semanal, log1p no target.
     Inclui o ID do expositor, como o modelo foi treinado.
     """
+    logger.info(f"[_PREPARAR] Preparando DataFrame para {id_expositor}, {len(df_trends)} linhas")
     df = df_trends.rename(columns={"data": "ds", "trends": "y"})
     df["ds"] = pd.to_datetime(df["ds"])
     df["ID"] = id_expositor                        
@@ -54,7 +68,9 @@ def _preparar_df(df_trends: pd.DataFrame, id_expositor: str) -> pd.DataFrame:
     df = df.set_index("ds").asfreq("W-SUN")
     df["y"] = df["y"].ffill().fillna(0)
     df["y"] = np.log1p(df["y"])
-    return df.reset_index()
+    result = df.reset_index()
+    logger.info(f"[_PREPARAR] DataFrame preparado, {len(result)} linhas finais")
+    return result
 
 
 
@@ -63,7 +79,9 @@ def predict_neural(
     id_expositor: str,          
     data_alvo: str,
 ) -> float:
+    logger.info(f"[NEURAL] Iniciando previsão para {id_expositor}, data_alvo={data_alvo}")
     if MODEL_OTIMO is None:
+        logger.error("[NEURAL] MODEL_OTIMO é None")
         raise RuntimeError("model_otimo.np não foi carregado.")
 
     df = _preparar_df(df_trends, id_expositor)
@@ -87,7 +105,10 @@ def predict_neural(
     yhat_log = pred[col_target].values[0]
     
     if pd.isna(yhat_log):
+        logger.error(f"[NEURAL] Previsão retornou NaN para {data_alvo_dt}")
         raise ValueError(f"Previsão retornou NaN para {data_alvo_dt}")
+    
+    logger.info(f"[NEURAL] Previsão final: {yhat_log} (log) -> {np.expm1(yhat_log)} (original)")
 
     return float(np.expm1(yhat_log))
 
@@ -97,9 +118,12 @@ def predict_croston_serie(df_trends: pd.DataFrame) -> float:
     Roda Croston para séries intermitentes.
     Retorna yhat na escala original (revertendo log1p).
     """
+    logger.info(f"[CROSTON_SERIE] Iniciando para série com {len(df_trends)} pontos")
     y = np.log1p(df_trends["trends"].values)
     yhat_log = croston(y, alpha=0.2)
-    return float(np.expm1(yhat_log))
+    result = float(np.expm1(yhat_log))
+    logger.info(f"[CROSTON_SERIE] Resultado: {result}")
+    return result
 
 
 def predict(
@@ -108,22 +132,28 @@ def predict(
     data_alvo: str,
     id_expositor: str = "",
 ) -> tuple[float, str]:
+    logger.info(f"[PREDICT] id={id_expositor}, tipo_serie={tipo_serie}, data_alvo={data_alvo}")
     if df_trends.empty:
+        logger.warning("[PREDICT] df_trends vazio, retornando 0.0, SEM DADOS TRENDS")
         return 0.0, "SEM DADOS TRENDS"
     if tipo_serie == "sem_sinal":
+        logger.warning("[PREDICT] tipo_serie='sem_sinal', retornando 0.0")
         return 0.0, "SEM DADOS TRENDS"
     if tipo_serie == "otima":
         try:
             yhat = predict_neural(df_trends, id_expositor, data_alvo)
             if pd.isna(yhat) or yhat < 0:
-                print(f"[MODEL] Previsão inválida para {id_expositor}: {yhat}")
+                logger.error(f"[PREDICT] Previsão inválida para {id_expositor}: {yhat}")
                 return 0.0, "NENHUM"
-            return yhat, "NEURAL_PROPHET"
+            logger.info(f"[PREDICT] NeuralProphet retornou {yhat}")
+            return yhat, "NEURAL_PROPHET_OTIMO"
         except Exception as e:
-            print(f"[MODEL] NeuralProphet falhou para {id_expositor} — {e}")
+            logger.error(f"[PREDICT] NeuralProphet falhou para {id_expositor} — {e}")
             return 0.0, "NENHUM"
     elif tipo_serie == "intermitente":
+        logger.info("[PREDICT] Usando Croston para série intermitente")
         yhat = predict_croston_serie(df_trends)
         return yhat, "CROSTON"
     else:
+        logger.warning(f"[PREDICT] Tipo série desconhecido: {tipo_serie}")
         return 0.0, "SEM DADOS TRENDS"
