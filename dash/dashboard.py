@@ -7,13 +7,6 @@ import sys
 import os
 from sqlalchemy.engine import Engine
 
-# Configurar paths ANTES de importações relativas
-root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-app_path = os.path.join(root_path, 'app')
-sys.path.insert(0, root_path)
-sys.path.insert(0, app_path)
-sys.path.insert(0, os.path.dirname(__file__))
-
 from exagerado_theme import (
     inject_theme,
     sidebar_logo,
@@ -27,12 +20,18 @@ from exagerado_theme import (
     simulacao_card
 )
 
-
 from data_loader import (
     load_data_atual,
     load_data_historico,
     load_forecast_trends,
 )
+
+# Configurar paths ANTES de importações relativas
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+app_path = os.path.join(root_path, 'app')
+sys.path.insert(0, root_path)
+sys.path.insert(0, app_path)
+sys.path.insert(0, os.path.dirname(__file__))
 
 from forecast import rodar_etl_otimizacao
 
