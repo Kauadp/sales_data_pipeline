@@ -9,6 +9,7 @@ import os
 # Configurar paths ANTES de importações relativas
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 app_path = os.path.join(root_path, 'app')
+img_path = os.path.join(root_path, 'img')
 sys.path.insert(0, root_path)
 sys.path.insert(0, app_path)
 sys.path.insert(0, os.path.dirname(__file__))
@@ -46,7 +47,8 @@ inject_theme()
 # SideBar
 
 with st.sidebar:
-    st.image('img/favicon.ico', width=50)
+    favicon_path = os.path.join(img_path, 'favicon.ico')
+    st.image(favicon_path, width=50)
     sidebar_logo()
 
     st.markdown('###')

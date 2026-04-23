@@ -16,9 +16,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "models", "model_otimo.np")
-
 # Define diretório temporário para produção (evita Permission denied em /home/kau)
 temp_dir = tempfile.mkdtemp()
 os.environ["TMPDIR"] = temp_dir
@@ -26,7 +23,8 @@ os.environ["HOME"] = temp_dir
 os.environ["TEMP"] = temp_dir
 os.environ["TMP"] = temp_dir
 
-os.chdir(temp_dir)
+# NÃO muda o diretório de trabalho - apenas configura variáveis de ambiente
+# os.chdir(temp_dir)  # REMOVIDO - causava problema de caminho
 
 # Configura diretório de cache do PyTorch
 torch_cache = os.path.join(temp_dir, "torch_cache")
@@ -42,6 +40,11 @@ logger.info(f"[MODEL] Temp dir configurado: {temp_dir}")
 # carrega o modelo uma vez só na inicialização do módulo
 # (não a cada request do dash)
 torch.load = functools.partial(torch.load, weights_only=False)
+
+# Determina o caminho base corretamente
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# O modelo está em /mount/src/sales_data_pipeline/models/
+MODEL_PATH = os.path.join(os.path.dirname(BASE_DIR), "models", "model_otimo.np")
 
 try:
     MODEL_OTIMO = np_load(MODEL_PATH)
