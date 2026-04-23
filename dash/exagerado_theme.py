@@ -107,6 +107,19 @@ def inject_theme():
         margin: 16px 0 !important;
     }
 
+    /* --- SPINNER --- */
+    /* Main: fundo claro → texto escuro */
+    [data-testid="stMain"] [data-testid="stSpinner"] p,
+    [data-testid="stMain"] [data-testid="stSpinner"] span {
+        color: var(--ex-black) !important;
+    }
+
+    /* Sidebar: fundo escuro → texto claro */
+    [data-testid="stSidebar"] [data-testid="stSpinner"] p,
+    [data-testid="stSidebar"] [data-testid="stSpinner"] span {
+        color: rgba(255,255,255,0.85) !important;
+    }
+
     /* --- RADIO (menu de seção na sidebar) --- */
     [data-testid="stSidebar"] .stRadio label {
         padding: 8px 10px !important;
@@ -172,6 +185,15 @@ def inject_theme():
         font-weight: 500 !important;
         padding: 8px 20px !important;
         transition: background 0.15s !important;
+        position: relative !important;
+        z-index: 999 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+
+    .stButton {
+        position: relative !important;
+        z-index: 999 !important;
     }
 
     .stButton > button:hover {
@@ -248,6 +270,122 @@ def inject_theme():
         margin-bottom: 4px !important;
     }
 
+    /* --- INPUTS UNIFICADOS (SELECT, TEXT, NUMBER) --- */
+    /* Força o fundo branco e bordas padrão em todos os campos no Main */
+    [data-testid="stMain"] .stSelectbox > div > div,
+    [data-testid="stMain"] .stTextInput > div > div,
+    [data-testid="stMain"] .stNumberInput > div > div,
+    [data-testid="stMain"] div[data-baseweb="input"],
+    [data-testid="stMain"] [data-testid="stNumberInput"] > div > div,
+    [data-testid="stMain"] [data-testid="stNumberInput"] div[data-baseweb="input"] {
+        background-color: var(--ex-white) !important;
+        border: 1px solid var(--ex-border) !important;
+        border-radius: 8px !important;
+    }
+
+    /* NumberInput: container principal (envolve botões + input) - ALTA SPECIFICITY */
+    [data-testid="stMain"] div[data-testid="stNumberInput"] > div,
+    [data-testid="stMain"] div[data-testid="stNumberInput"] > div > div {
+        background-color: var(--ex-white) !important;
+        border: 1px solid var(--ex-border) !important;
+        border-radius: 8px !important;
+    }
+
+    /* NumberInput: container interno do input (onde digita o número) */
+    [data-testid="stMain"] .stNumberInput > div > div,
+    [data-testid="stMain"] [data-testid="stNumberInput"] > div > div {
+        background-color: var(--ex-white) !important;
+    }
+
+    /* NumberInput: TODOS os containers internos */
+    [data-testid="stMain"] .stNumberInput > div,
+    [data-testid="stMain"] .stNumberInput > div > div,
+    [data-testid="stMain"] .stNumberInput > div > div > div,
+    [data-testid="stMain"] [data-testid="stNumberInput"] > div,
+    [data-testid="stMain"] [data-testid="stNumberInput"] > div > div,
+    [data-testid="stMain"] [data-testid="stNumberInput"] > div > div > div {
+        background-color: var(--ex-white) !important;
+    }
+
+    /* Esconde os botões de + e - para um visual clean de digitação */
+    [data-testid="stMain"] .stNumberInput button,
+    [data-testid="stMain"] [data-testid="stNumberInput"] button {
+        display: none !important;
+    }
+
+    /* Ajuste fino do texto digitado e do cursor */
+    [data-testid="stMain"] input,
+    [data-testid="stMain"] [data-testid="stNumberInput"] input {
+        color: var(--ex-black) !important;
+        caret-color: var(--ex-black) !important;
+        cursor: text !important;
+        padding-left: 12px !important;
+        background-color: transparent !important;
+    }
+
+    /* Cursor (caret) piscando - animação de foco */
+    [data-testid="stMain"] input:focus,
+    [data-testid="stMain"] [data-testid="stNumberInput"] input:focus {
+        caret-color: var(--ex-purple) !important;
+        animation: cursor-blink 1s infinite;
+    }
+
+    @keyframes cursor-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    /* Remove a borda/tracejado branco que aparece ao clicar */
+    [data-testid="stMain"] input:focus,
+    [data-testid="stMain"] [data-testid="stNumberInput"] input:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Placeholder legível (Dica interna da caixa) */
+    [data-testid="stMain"] input::placeholder,
+    [data-testid="stMain"] [data-testid="stNumberInput"] input::placeholder {
+        color: rgba(26, 26, 26, 0.4) !important;
+    }
+
+    /* X de limpar o campo (clear button) — ícone preto */
+    [data-testid="stMain"] [data-baseweb="input"] [data-baseweb="clear-icon"],
+    [data-testid="stMain"] [data-baseweb="input"] button[aria-label="Clear value"],
+    [data-testid="stMain"] [data-baseweb="input"] button svg,
+    [data-testid="stMain"] [data-baseweb="input"] button svg path,
+    [data-testid="stMain"] div[data-baseweb="input"] svg {
+        color: var(--ex-black) !important;
+        fill: var(--ex-black) !important;
+        stroke: var(--ex-black) !important;
+        opacity: 0.5 !important;
+    }
+
+    [data-testid="stMain"] [data-baseweb="input"] button:hover svg,
+    [data-testid="stMain"] [data-baseweb="input"] button:hover svg path,
+    [data-testid="stMain"] div[data-baseweb="input"] button:hover svg {
+        opacity: 1 !important;
+    }
+
+    /* Efeito de foco roxo ao clicar */
+    [data-testid="stMain"] div[data-baseweb="input"]:focus-within,
+    [data-testid="stMain"] [data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within {
+        border-color: var(--ex-purple) !important;
+        box-shadow: 0 0 0 2px rgba(107,63,160,0.15) !important;
+    }
+
+    /* Selectbox foco no Main */
+    [data-testid="stMain"] .stSelectbox > div > div:focus-within,
+    [data-testid="stMain"] .stMultiSelect > div > div:focus-within {
+        border-color: var(--ex-purple) !important;
+        box-shadow: 0 0 0 2px rgba(107,63,160,0.15) !important;
+    }
+
+    /* Container interno do NumberInput */
+    [data-testid="stMain"] .stNumberInput [data-baseweb="input"],
+    [data-testid="stMain"] [data-testid="stNumberInput"] [data-baseweb="input"] {
+        background-color: var(--ex-white) !important;
+    }
+
     /* --- CABEÇALHOS DA PÁGINA --- */
     h1 {
         font-family: 'DM Serif Display', serif !important;
@@ -322,6 +460,18 @@ def inject_theme():
         color: var(--ex-black) !important;
     }
 
+    /* Garante que iframes de componentes customizados não bloqueiem cliques */
+    iframe {
+        pointer-events: none !important;
+    }
+
+    /* Reativa pointer-events apenas dentro dos iframes (afeta só o conteúdo externo) */
+    .stButton, .stButton > button,
+    .stTextInput, .stNumberInput, .stSelectbox,
+    [data-testid="stWidgetLabel"] {
+        pointer-events: auto !important;
+    }
+
     /* --- RODAPÉ HIDE --- */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
@@ -342,6 +492,39 @@ def inject_theme():
     div[role="option"]:hover {
         background-color: var(--ex-purple-light) !important;
         color: var(--ex-black) !important;
+    }
+
+    /* Esconde o overlay "Press Enter to apply" do Streamlit */
+    [data-testid="stNumberInputInstructions"],
+    [data-testid="InputInstructions"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
+    }
+
+    /* Remove a barrinha/linha branca que aparece embaixo do number input ao digitar */
+    [data-testid="stMain"] .stNumberInput [data-baseweb="input"]::after,
+    [data-testid="stMain"] .stNumberInput [data-baseweb="input"]::before,
+    [data-testid="stMain"] .stNumberInput > div > div::after,
+    [data-testid="stMain"] .stNumberInput > div > div::before,
+    [data-testid="stMain"] [data-testid="stNumberInput"] [data-baseweb="input"]::after,
+    [data-testid="stMain"] [data-testid="stNumberInput"] [data-baseweb="input"]::before {
+        display: none !important;
+        content: none !important;
+        border: none !important;
+        background: none !important;
+    }
+
+    /* Garante que o input interno não mostre borda/sublinhado extra */
+    [data-testid="stMain"] .stNumberInput input,
+    [data-testid="stMain"] [data-testid="stNumberInput"] input {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
     }
 
     </style>
@@ -605,4 +788,160 @@ def priority_header(tipo: str):
         <span style="font-size:10px;color:#6B6963;">{sublabel}</span>
     </div>
     """, height=36, scrolling=False)
+
+
+
+def simulacao_card(resultado: dict):
+    """
+    Renderiza o card de resultado da simulação.
  
+    O dict `resultado` é o retorno de melhores_parametros_otimizados().
+    Campos esperados: nome_fantasia, status_atual, prob_atual,
+                      meta_teto_para_60pct, tem_otimizacao, tem_tabela, linhas.
+    """
+    from streamlit.components.v1 import html
+ 
+    nome_fantasia = resultado.get("nome_fantasia", "—")
+    status_atual  = resultado.get("status_atual", "—")
+    prob_atual    = resultado.get("prob_atual", 0)
+    meta_teto     = resultado.get("meta_teto_para_60pct", 0)
+    tem_otimizacao = resultado.get("tem_otimizacao", False)
+    tem_tabela     = resultado.get("tem_tabela", False)
+    linhas         = resultado.get("linhas", [])
+ 
+    vale_a_pena = prob_atual >= 60
+    if vale_a_pena:
+        status_bg     = "#E8F4EE"
+        status_border = "#2E7D5C"
+        status_label  = "✅ Vale a pena"
+        status_sub    = "Os parâmetros informados são viáveis."
+    else:
+        status_bg     = "#FBEAE8"
+        status_border = "#C0392B"
+        status_label  = "❌ Não vale a pena"
+        status_sub    = "Os parâmetros informados não são viáveis. Veja os cenários otimizados abaixo."
+ 
+    meta_fmt = f"R$ {meta_teto:,.0f}" if isinstance(meta_teto, (int, float)) else str(meta_teto)
+ 
+    # ── métricas do cenário atual ──────────────────────────────────────────
+    metricas_html = f"""
+    <div style="display:flex;flex-wrap:wrap;border-top:1px solid rgba(26,26,26,0.07);margin-top:14px;">
+        <div style="display:flex;flex-direction:column;padding:12px 16px;border-right:1px solid rgba(26,26,26,0.07);min-width:120px;flex:1;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">Probabilidade Atual</div>
+            <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{prob_atual:.1f}%</div>
+        </div>
+        <div style="display:flex;flex-direction:column;padding:12px 16px;border-right:1px solid rgba(26,26,26,0.07);min-width:120px;flex:1;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">Status</div>
+            <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{status_atual}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;padding:12px 16px;min-width:120px;flex:1;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">Meta para 60%</div>
+            <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{meta_fmt}</div>
+        </div>
+    </div>
+    """
+ 
+    # ── bloco de otimização ────────────────────────────────────────────────
+    if not tem_otimizacao:
+        ja_otimo = resultado.get("ja_otimo", False)
+
+        if ja_otimo:
+            otimizacao_html = """
+            <div style="margin-top:16px;background:#E8F4EE;border:1px solid rgba(46,125,92,0.3);
+                        border-radius:10px;padding:16px 18px;text-align:center;">
+                <div style="font-size:12px;font-weight:600;color:#2E7D5C;">✨ Parâmetros já são ótimos!</div>
+                <div style="font-size:11px;color:#2E7D5C;margin-top:4px;opacity:0.8;">
+                    Não há necessidade de ajustes. Os valores atuais são ideais.
+                </div>
+            </div>
+            """
+        else:
+            otimizacao_html = """
+            <div style="margin-top:16px;background:#FBEAE8;border:1px solid rgba(192,57,43,0.25);
+                        border-radius:10px;padding:16px 18px;text-align:center;">
+                <div style="font-size:12px;font-weight:600;color:#C0392B;">
+                    ⚠️ Sem cenário viável nos parâmetros comerciais aceitos
+                </div>
+                <div style="font-size:11px;color:#C0392B;margin-top:6px;opacity:0.85;">
+                    A receita esperada deste expositor não comporta nenhuma combinação de 
+                    comissão (1%–15%) e mínimo garantido (R$5.000–R$35.000) com probabilidade 
+                    mínima de 60%. Considere não firmar contrato de comissão com este expositor.
+                </div>
+            </div>
+            """
+    else:
+        # cabeçalho da tabela
+        cabecalho = """
+        <div style="display:grid;grid-template-columns: 1fr 1fr 1fr 1.5fr 1.5fr;
+                    gap:0;border-bottom:1px solid rgba(26,26,26,0.1);padding:8px 0;margin-bottom:4px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Prob. alvo</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Prob. real</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Comissão</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">MG</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Receita empresa</div>
+        </div>
+        """
+ 
+        linhas_html = ""
+        for l in linhas:
+            if l["recomendado"]:
+                row_bg     = "background:rgba(107,63,160,0.06);"
+                tag        = '<span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B3FA0;background:rgba(107,63,160,0.12);border-radius:4px;padding:2px 6px;margin-left:6px;">recomendado</span>'
+                prob_color = "#6B3FA0"
+            else:
+                row_bg     = ""
+                tag        = ""
+                prob_color = "#1A1A1A"
+ 
+            linhas_html += f"""
+            <div style="display:grid;grid-template-columns: 1fr 1fr 1fr 1.5fr 1.5fr;
+                        gap:0;padding:10px 8px;border-radius:6px;{row_bg}
+                        border-bottom:1px solid rgba(26,26,26,0.05);align-items:center;">
+                <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:16px;color:{prob_color};">{l['prob_alvo']}{tag}</div>
+                <div style="font-size:13px;color:#6B6963;">{l['prob_real']}%</div>
+                <div style="font-size:13px;color:#1A1A1A;font-weight:500;">{l['comissao']}</div>
+                <div style="font-size:13px;color:#1A1A1A;font-weight:500;">{l['mg']}</div>
+                <div style="font-size:13px;color:#1A1A1A;">{l['receita_empresa']}</div>
+            </div>
+            """
+ 
+        subtitulo = "Cenários por faixa de probabilidade" if tem_tabela else "Melhor cenário possível — abaixo de 60%"
+ 
+        otimizacao_html = f"""
+        <div style="margin-top:16px;background:#F6F4EE;border:1px solid rgba(107,63,160,0.2);
+                    border-radius:10px;padding:14px 18px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#6B3FA0;display:inline-block;flex-shrink:0;"></span>
+                <span style="font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#6B3FA0;">Cenários Otimizados</span>
+                <span style="font-size:11px;color:#6B6963;margin-left:4px;">{subtitulo}</span>
+            </div>
+            {cabecalho}
+            {linhas_html}
+        </div>
+        """
+ 
+    # ── card completo ──────────────────────────────────────────────────────
+    card_html = f"""
+    <div style="background:#ffffff;border:1px solid rgba(26,26,26,0.10);
+                border-radius:12px;padding:18px 20px;margin-top:8px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+            <div>
+                <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;
+                            text-transform:uppercase;color:#6B6963;margin-bottom:4px;">Simulação — {nome_fantasia}</div>
+                <div style="font-size:12px;color:#6B6963;">{status_sub}</div>
+            </div>
+            <div style="background:{status_bg};border:1px solid {status_border};border-radius:20px;
+                        padding:5px 14px;font-size:12px;font-weight:600;color:{status_border};
+                        white-space:nowrap;flex-shrink:0;">{status_label}</div>
+        </div>
+        <div style="margin-top:16px;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:#6B6963;
+                        margin-bottom:8px;text-transform:uppercase;">Cenário Atual</div>
+            {metricas_html}
+        </div>
+        {otimizacao_html}
+    </div>
+    """
+ 
+    altura = 280 + (len(linhas) * 48) + (80 if not tem_otimizacao else 0)
+    html(card_html, height=altura, scrolling=False)

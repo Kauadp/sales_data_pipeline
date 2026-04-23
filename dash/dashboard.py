@@ -5,7 +5,14 @@ import plotly.express as px
 import unicodedata
 import sys
 import os
-from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+
+# Configurar paths ANTES de importações relativas
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+app_path = os.path.join(root_path, 'app')
+sys.path.insert(0, root_path)
+sys.path.insert(0, app_path)
+sys.path.insert(0, os.path.dirname(__file__))
 
 from exagerado_theme import (
     inject_theme,
@@ -16,7 +23,8 @@ from exagerado_theme import (
     resumo_estrategico,
     filter_header,
     table_card,
-    priority_header
+    priority_header,
+    simulacao_card
 )
 
 
@@ -26,18 +34,13 @@ from data_loader import (
     load_forecast_trends,
 )
 
+from forecast import rodar_etl_otimizacao
+
 st.set_page_config(
     page_title='Dashboard de Expositores',
     layout='wide',
     initial_sidebar_state='expanded',
 )
-
-root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
-app_path = os.path.join(root_path, 'app')
-
-sys.path.append(root_path)
-sys.path.append(app_path)
 
 from app.pipeline import run_pipeline
 
@@ -605,12 +608,12 @@ elif secao == 'Forecasting':
     st.title('Forecasting')
     if evento != "Rio de Janeiro":
         section_header(
-            'Carteira de expositores comissionados — cenário de receita e risco',
+            'Carteira de expositores comissionados — cenário de receita, risco e otimização de parâmetros de negociação',
             'Seção Apenas Disponível Para Funil do Rio de Janeiro.'
         )
     else:
         section_header(
-            'Carteira de expositores comissionados — cenário de receita e risco',
+            'Carteira de expositores comissionados — cenário de receita, risco e otimização de parâmetros de negociação',
             'Visão Geral'
         )
     st.markdown('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:16px 0">', unsafe_allow_html=True)
@@ -680,6 +683,132 @@ elif secao == 'Forecasting':
         )
  
     st.markdown('###')
+    st.markdown('---')
+
+    # ── Otimização de Parâmetros ─────────────────────────────────────────────────────
+
+    section_header('Otimização de Parâmetros e Cenários Alternativos')
+
+    col_nome, col_area, col_ticket = st.columns([2, 1, 1])
+
+    with col_nome:
+        sim_expositor = st.text_input(
+            "Nome Fantasia",
+            placeholder="Digite o nome do expositor...",
+            key="sim_nome"
+        )
+
+    with col_area:
+        sim_area = st.number_input(
+            "Área (m²)",
+            value=None,
+            placeholder="0",
+            key="sim_area"
+        )
+
+    with col_ticket:
+        sim_ticket = st.number_input(
+            "Ticket Médio (R$)",
+            value=None,
+            placeholder="0,00",
+            format="%.2f",
+            key="sim_ticket"
+        )
+
+    col_comissao, col_minimo = st.columns(2)
+
+    with col_comissao:
+        sim_comissao = st.number_input(
+            "Comissão (%)",
+            value=None,
+            placeholder="0,00",
+            format="%.2f",
+            key="sim_comissao"
+        )
+
+    with col_minimo:
+        sim_minimo = st.number_input(
+            "Mínimo Garantido (R$)",
+            value=None,
+            placeholder="0,00",
+            format="%.2f",
+            key="sim_minimo"
+        )
+
+
+    _, col_btn = st.columns([5, 1])
+
+    with col_btn:
+        simular = st.button("🔄 Simular", type="primary", use_container_width=True)
+
+    if simular:
+        campos = {
+            "Nome Fantasia": sim_expositor,
+            "Área": sim_area,
+            "Ticket Médio": sim_ticket,
+            "Percentual Comissão": sim_comissao,
+            "Mínimo Garantido": sim_minimo
+        }
+
+        erros = []
+        for nome, valor in campos.items():
+            if valor is None or valor == "":
+                erros.append(nome)
+
+        if erros:
+            st.error(f"🚨 **Erro de validação:** Preencha os campos: {', '.join(erros)}")
+            st.stop()
+
+        st.markdown(
+            """
+            <style>
+            /* spinner dentro do main content (fundo claro) */
+            .main div[data-testid='stSpinner'] p {
+                color: #1a1a1a !important;
+            }
+
+            /* sidebar mantém o padrão claro (fundo escuro) */
+            section[data-testid='stSidebar'] div[data-testid='stSpinner'] p {
+                color: #ffffff !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        with st.spinner("🚀 Processando dados e otimizando parâmetros..."):
+            
+            # Prepara os dados
+            dados_simulacao = {
+                "nome_fantasia": sim_expositor,
+                "area": sim_area,
+                "ticket_medio": sim_ticket,
+                "pct_comissao": sim_comissao,
+                "minimo_garantido": sim_minimo
+            }
+
+            # Roda o processamento pesado
+            df_resultado = rodar_etl_otimizacao(Engine, dados_simulacao)
+            
+            if df_resultado:
+                # Salva no estado para persistir na tela
+                st.session_state["sim_resultado"] = df_resultado
+                st.toast("✅ Simulação concluída com sucesso!", icon="🎉")
+            else:
+                st.error("⚠️ Falha ao processar os dados da simulação.")
+
+    # Exibição dos resultados (fora do bloco 'if simular' para não sumir ao interagir)
+    if "sim_resultado" in st.session_state:
+        resultado_dict = st.session_state["sim_resultado"]
+        
+        section_header("Resultado da Simulação")
+        simulacao_card(resultado_dict)
+        
+        # Botão opcional para limpar a simulação
+        if st.button("🗑️ Limpar Simulação", help="Remove os dados calculados da tela"):
+            del st.session_state["sim_resultado"]
+            st.rerun()
+
     st.markdown('---')
  
     # ── 3. SCATTER: prob × ganho ──────────────────────────────────────────────
@@ -755,7 +884,7 @@ elif secao == 'Forecasting':
         priority_header("oportunidade")
         table_card(get_tabela_oportunidades(df_forecast), col_labels=COL_LABELS_PRIORIDADE)
 
-
+    st.markdown('---')
  
     # ── 5. RESUMO ESTRATÉGICO ─────────────────────────────────────────────────
     section_header('Resumo Estratégico')
@@ -805,7 +934,3 @@ elif secao == 'Forecasting':
     if items_resumo:
         resumo_estrategico(items_resumo)
  
-    st.markdown('###')
-    st.markdown('---')
-
-    
