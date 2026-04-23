@@ -16,12 +16,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "model_otimo.np")
+
 # Define diretório temporário para produção (evita Permission denied em /home/kau)
 temp_dir = tempfile.mkdtemp()
 os.environ["TMPDIR"] = temp_dir
 os.environ["HOME"] = temp_dir
 os.environ["TEMP"] = temp_dir
 os.environ["TMP"] = temp_dir
+
+os.chdir(temp_dir)
 
 # Configura diretório de cache do PyTorch
 torch_cache = os.path.join(temp_dir, "torch_cache")
@@ -39,8 +44,20 @@ logger.info(f"[MODEL] Temp dir configurado: {temp_dir}")
 torch.load = functools.partial(torch.load, weights_only=False)
 
 try:
-    MODEL_OTIMO = np_load("models/model_otimo.np")
+    MODEL_OTIMO = np_load(MODEL_PATH)
+
     logger.info("[MODEL] model_otimo.np carregado com sucesso")
+
+    if hasattr(MODEL_OTIMO, "trainer") and MODEL_OTIMO.trainer is not None:
+        MODEL_OTIMO.trainer.logger = None
+        MODEL_OTIMO.trainer.enable_checkpointing = False
+        MODEL_OTIMO.trainer.default_root_dir = temp_dir
+        MODEL_OTIMO.trainer.callbacks = []
+
+    MODEL_OTIMO.config_train.logger = None
+    MODEL_OTIMO.config_train.epochs = 0
+    MODEL_OTIMO.fitted = True
+
 except Exception as e:
     MODEL_OTIMO = None
     logger.error(f"[MODEL] Aviso: não foi possível carregar model_otimo.np — {e}")
