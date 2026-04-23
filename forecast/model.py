@@ -46,6 +46,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # O modelo está em /mount/src/sales_data_pipeline/models/
 MODEL_PATH = os.path.join(os.path.dirname(BASE_DIR), "models", "model_otimo.np")
 
+logger.info(f"[MODEL] BASE_DIR: {BASE_DIR}")
+logger.info(f"[MODEL] MODEL_PATH: {MODEL_PATH}")
+logger.info(f"[MODEL] Modelo existe: {os.path.exists(MODEL_PATH)}")
+
 try:
     MODEL_OTIMO = np_load(MODEL_PATH)
 

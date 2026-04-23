@@ -45,7 +45,7 @@ BOOL_TRUE = {"SIM", "S", "TRUE", "1", "RECORRENTE"}
 BOOL_FALSE = {"NAO", "NÃO", "N", "FALSE", "0", "NOVO"}
 
 # Limites superiores exclusivos para uso com iloc[start:end]
-STAND_ES_END_ROW = 163
+STAND_ES_END_ROW = 164
 FOOD_ES_END_ROW = 42
 STAND_RJ_END_ROW = 89
 
