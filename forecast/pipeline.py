@@ -14,6 +14,15 @@ from forecast.simulation import (
 import os 
 import logging
 import json
+import sys
+
+# Adicionar o path do app para importar get_engine
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+app_path = os.path.join(root_path, 'app')
+sys.path.insert(0, root_path)
+sys.path.insert(0, app_path)
+
+from app.db.database import get_engine
 
 # Configuração de logging
 logging.basicConfig(
@@ -117,7 +126,13 @@ def _salvar_forecast_cache(engine: Engine, df_db: pd.DataFrame) -> None:
     except Exception as e:
         logger.info(f"[DB] Erro ao salvar em forecast_trends_cache: {e}")
 
-def rodar_etl_otimizacao(engine: Engine, data) -> pd.DataFrame:
+def rodar_etl_otimizacao(data) -> pd.DataFrame:
+    """
+    ETL de otimização — obtém a engine automaticamente do módulo de database.
+    """
+    from app.config import URL_DB
+    engine = get_engine(URL_DB)
+    
     logger.info(f"[OTM] Processando {data['nome_fantasia']}...")
  
     df_trends = _buscar_trends(data["nome_fantasia"])

@@ -5,7 +5,6 @@ import plotly.express as px
 import unicodedata
 import sys
 import os
-from sqlalchemy.engine import Engine
 
 # Configurar paths ANTES de importações relativas
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -786,7 +785,7 @@ elif secao == 'Forecasting':
             }
 
             # Roda o processamento pesado
-            df_resultado = rodar_etl_otimizacao(Engine, dados_simulacao)
+            df_resultado = rodar_etl_otimizacao(dados_simulacao)
             
             if df_resultado:
                 # Salva no estado para persistir na tela
