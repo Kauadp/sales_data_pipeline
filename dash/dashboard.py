@@ -7,25 +7,6 @@ import sys
 import os
 from sqlalchemy.engine import Engine
 
-from exagerado_theme import (
-    inject_theme,
-    sidebar_logo,
-    section_header,
-    kpi_card,
-    chart_card,
-    resumo_estrategico,
-    filter_header,
-    table_card,
-    priority_header,
-    simulacao_card
-)
-
-from data_loader import (
-    load_data_atual,
-    load_data_historico,
-    load_forecast_trends,
-)
-
 # Configurar paths ANTES de importações relativas
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 app_path = os.path.join(root_path, 'app')
@@ -33,15 +14,33 @@ sys.path.insert(0, root_path)
 sys.path.insert(0, app_path)
 sys.path.insert(0, os.path.dirname(__file__))
 
+from exagerado_theme import (
+    inject_theme,
+    sidebar_logo,
+    section_header,
+    kpi_card,
+    chart_card,
+    resumo_estrategico,
+    table_card,
+    priority_header,
+    simulacao_card
+)
+
+
+from data_loader import (
+    load_data_atual,
+    load_data_historico,
+    load_forecast_trends,
+)
+
 from forecast import rodar_etl_otimizacao
+from app.pipeline import run_pipeline
 
 st.set_page_config(
     page_title='Dashboard de Expositores',
     layout='wide',
     initial_sidebar_state='expanded',
 )
-
-from app.pipeline import run_pipeline
 
 inject_theme()
 
