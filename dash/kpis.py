@@ -397,7 +397,7 @@ def kpi_forecast_section(df: pd.DataFrame):
 
     count_valeu_a_pena = (df["status_decisao"] != "Comissão Não Vale A Pena").sum()
 
-    pct_valeu_a_pena = count_valeu_a_pena / total_expositores_base
+    pct_valeu_a_pena = (count_valeu_a_pena / total_expositores_base) * 100 if total_expositores_base > 0 else 0
 
     # Distribuição de status
     status_counts = (df[df["modelo_origem"] != "SEM DADOS TRENDS"]["status_decisao"]).value_counts().to_dict()
