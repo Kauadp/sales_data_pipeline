@@ -58,7 +58,7 @@ try:
     if hasattr(MODEL_OTIMO, "trainer") and MODEL_OTIMO.trainer is not None:
         MODEL_OTIMO.trainer.logger = None
         MODEL_OTIMO.trainer.enable_checkpointing = False
-        MODEL_OTIMO.trainer.default_root_dir = temp_dir
+        # Removido: default_root_dir não tem setter no Trainer do NeuralProphet
         MODEL_OTIMO.trainer.callbacks = []
 
     MODEL_OTIMO.config_train.logger = None
