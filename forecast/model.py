@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 from neuralprophet import load as np_load
 import logging
+import shutil
 
 # Configuração de logging
 logging.basicConfig(
@@ -16,8 +17,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define diretório temporário para produção (evita Permission denied em /home/kau)
-os.environ["TMPDIR"] = tempfile.gettempdir()
-os.environ["HOME"] = tempfile.gettempdir()
+temp_dir = tempfile.mkdtemp()
+os.environ["TMPDIR"] = temp_dir
+os.environ["HOME"] = temp_dir
+os.environ["TEMP"] = temp_dir
+os.environ["TMP"] = temp_dir
+
+# Configura diretório de cache do PyTorch
+torch_cache = os.path.join(temp_dir, "torch_cache")
+os.makedirs(torch_cache, exist_ok=True)
+torch.hub.set_dir(torch_cache)
+
+# Configura diretório para NeuralProphet logs
+np_cache = os.path.join(temp_dir, "np_cache")
+os.makedirs(np_cache, exist_ok=True)
+
+logger.info(f"[MODEL] Temp dir configurado: {temp_dir}")
 
 # carrega o modelo uma vez só na inicialização do módulo
 # (não a cada request do dash)
