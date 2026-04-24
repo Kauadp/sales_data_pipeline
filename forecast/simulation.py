@@ -64,7 +64,7 @@ def rodar_monte_carlo(
     # Volume de vendas: derivado da mediana das receitas já simuladas.
     # Evita consumir o gerador após as simulações principais (seed contaminada).
     receita_mediana = float(np.percentile(receitas, 50))
-    volume_vendas = int(round(receita_mediana / ticket_medio, -3)) if ticket_medio > 0 else 0
+    volume_vendas = int(round(receita_mediana / ticket_medio, 0)) if ticket_medio > 0 else 0
 
     if prob >= 60:
         status = "Comissão Vale A Pena"
@@ -138,7 +138,7 @@ def melhores_parametros_otimizados(resultado: pd.DataFrame, n_simulacoes: int = 
 
     # Volume base: mediana das receitas simuladas revertida pelo ticket.
     # Consistente com rodar_monte_carlo e não depende de nova amostragem.
-    volume_vendas_base = int(round(float(np.percentile(receitas_arr, 50)) / ticket, -3)) if ticket > 0 else 0
+    volume_vendas_base = int(round(float(np.percentile(receitas_arr, 50)) / ticket, 0)) if ticket > 0 else 0
 
     # ------------------------------------------------------------------
     # 4. Grid search 2D vetorizado
