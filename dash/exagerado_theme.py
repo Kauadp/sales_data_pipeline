@@ -795,19 +795,27 @@ def simulacao_card(resultado: dict):
     """
     Renderiza o card de resultado da simulação.
  
-    O dict `resultado` é o retorno de melhores_parametros_otimizados().
+    O dict `resultado` é o retorno de rodar_etl_otimizacao() (df_viz).
     Campos esperados: nome_fantasia, status_atual, prob_atual,
-                      meta_teto_para_60pct, tem_otimizacao, tem_tabela, linhas.
+                      meta_teto_para_60pct, tem_otimizacao, ja_otimo,
+                      tem_tabela, linhas, volume_vendas (opcional).
+
+    Lógica de volume de vendas:
+      - ja_otimo=True              → exibe volume_vendas como métrica extra ao lado das demais
+      - tem_otimizacao=True        → exibe coluna "Vol. Vendas" na tabela, lida de l["volume_vendas"]
+      - nem ótimo nem otimizável   → sem alteração (comportamento original)
     """
     from streamlit.components.v1 import html
  
-    nome_fantasia = resultado.get("nome_fantasia", "—")
-    status_atual  = resultado.get("status_atual", "—")
-    prob_atual    = resultado.get("prob_atual", 0)
-    meta_teto     = resultado.get("meta_teto_para_60pct", 0)
+    nome_fantasia  = resultado.get("nome_fantasia", "—")
+    status_atual   = resultado.get("status_atual", "—")
+    prob_atual     = resultado.get("prob_atual", 0)
+    meta_teto      = resultado.get("meta_teto_para_60pct", 0)
     tem_otimizacao = resultado.get("tem_otimizacao", False)
     tem_tabela     = resultado.get("tem_tabela", False)
     linhas         = resultado.get("linhas", [])
+    ja_otimo       = resultado.get("ja_otimo", False)
+    volume_vendas  = resultado.get("volume_vendas", 0)
  
     vale_a_pena = prob_atual >= 60
     if vale_a_pena:
@@ -822,7 +830,20 @@ def simulacao_card(resultado: dict):
         status_sub    = "Os parâmetros informados não são viáveis. Veja os cenários otimizados abaixo."
  
     meta_fmt = f"R$ {meta_teto:,.0f}" if isinstance(meta_teto, (int, float)) else str(meta_teto)
- 
+
+    # ── coluna extra de volume (só quando ja_otimo) ────────────────────────
+    if ja_otimo and volume_vendas:
+        volume_fmt = f"{int(volume_vendas):,}".replace(",", ".")
+        volume_col_html = f"""
+        <div style="display:flex;flex-direction:column;padding:12px 16px;min-width:120px;flex:1;
+                    border-left:1px solid rgba(26,26,26,0.07);">
+            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">Vol. de Vendas</div>
+            <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{volume_fmt}</div>
+        </div>
+        """
+    else:
+        volume_col_html = ""
+
     # ── métricas do cenário atual ──────────────────────────────────────────
     metricas_html = f"""
     <div style="display:flex;flex-wrap:wrap;border-top:1px solid rgba(26,26,26,0.07);margin-top:14px;">
@@ -838,13 +859,12 @@ def simulacao_card(resultado: dict):
             <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">Meta para 60%</div>
             <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{meta_fmt}</div>
         </div>
+        {volume_col_html}
     </div>
     """
  
     # ── bloco de otimização ────────────────────────────────────────────────
     if not tem_otimizacao:
-        ja_otimo = resultado.get("ja_otimo", False)
-
         if ja_otimo:
             otimizacao_html = """
             <div style="margin-top:16px;background:#E8F4EE;border:1px solid rgba(46,125,92,0.3);
@@ -870,15 +890,16 @@ def simulacao_card(resultado: dict):
             </div>
             """
     else:
-        # cabeçalho da tabela
+        # cabeçalho da tabela — inclui coluna de volume de vendas
         cabecalho = """
-        <div style="display:grid;grid-template-columns: 1fr 1fr 1fr 1.5fr 1.5fr;
+        <div style="display:grid;grid-template-columns: 1fr 1fr 1fr 1.5fr 1.5fr 1.5fr;
                     gap:0;border-bottom:1px solid rgba(26,26,26,0.1);padding:8px 0;margin-bottom:4px;">
             <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Prob. alvo</div>
             <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Prob. real</div>
             <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Comissão</div>
             <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">MG</div>
             <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Receita empresa</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B6963;">Vol. Vendas</div>
         </div>
         """
  
@@ -892,9 +913,15 @@ def simulacao_card(resultado: dict):
                 row_bg     = ""
                 tag        = ""
                 prob_color = "#1A1A1A"
+
+            vol_raw = volume_vendas
+            if vol_raw is not None:
+                vol_fmt = f"{int(vol_raw):,}".replace(",", ".")
+            else:
+                vol_fmt = "—"
  
             linhas_html += f"""
-            <div style="display:grid;grid-template-columns: 1fr 1fr 1fr 1.5fr 1.5fr;
+            <div style="display:grid;grid-template-columns: 1fr 1fr 1fr 1.5fr 1.5fr 1.5fr;
                         gap:0;padding:10px 8px;border-radius:6px;{row_bg}
                         border-bottom:1px solid rgba(26,26,26,0.05);align-items:center;">
                 <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:16px;color:{prob_color};">{l['prob_alvo']}{tag}</div>
@@ -902,6 +929,7 @@ def simulacao_card(resultado: dict):
                 <div style="font-size:13px;color:#1A1A1A;font-weight:500;">{l['comissao']}</div>
                 <div style="font-size:13px;color:#1A1A1A;font-weight:500;">{l['mg']}</div>
                 <div style="font-size:13px;color:#1A1A1A;">{l['receita_empresa']}</div>
+                <div style="font-size:13px;color:#1A1A1A;">{vol_fmt}</div>
             </div>
             """
  

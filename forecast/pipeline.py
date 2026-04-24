@@ -103,6 +103,7 @@ def rodar_etl_oficial(
             'prob_vale_a_pena_pct': resultado_mc["prob_vale_a_pena_pct"],
             'status_decisao': resultado_mc["status_decisao"],
             'yhat_trends': round(yhat, 4),
+            'volume_vendas': resultado_mc.get("volume_vendas", 0),
             'data_simulacao': pd.Timestamp.now()
         }
         resultados.append(resultado_db)
@@ -236,6 +237,7 @@ def rodar_etl_otimizacao(data) -> pd.DataFrame:
             'porte':                porte,
             'mg_atual':             resultado_df['minimo_garantido'].iloc[0],
             'yhat_trends':          round(yhat, 4),
+            'volume_vendas':        resultado_mc.get("volume_vendas", 0),
             'data_simulacao':       pd.Timestamp.now()
         }
     else:
@@ -252,13 +254,14 @@ def rodar_etl_otimizacao(data) -> pd.DataFrame:
             'porte':                porte,
             'mg_atual':             resultado_df['minimo_garantido'].iloc[0],
             'yhat_trends':          round(yhat, 4),
+            'volume_vendas':        otm.get("volume_vendas_base", 0),
             'data_simulacao':       pd.Timestamp.now()
         }
  
     df_viz = {k: df_db[k] for k in [
         "nome_fantasia", "status_atual", "prob_atual",
         "meta_teto_para_60pct", "tem_otimizacao", "ja_otimo",
-        "tem_tabela", "linhas"
+        "tem_tabela", "linhas", "volume_vendas"
     ]}
  
     logger.info(f"[ETL] ETL Completo para {data['nome_fantasia']}...")

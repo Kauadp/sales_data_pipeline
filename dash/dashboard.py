@@ -844,7 +844,7 @@ elif secao == 'Forecasting':
         "minimo_garantido":       "Piso Garantido",
         "receita_estimada_media": "Receita Estimada",
         "receita_otimizada":      "Receita Otimizada",
-        "modelo_origem":          "Modelo",
+        "volume_vendas":          "Volume Vendas",
     }
     
     COL_LABELS_PRIORIDADE = {
