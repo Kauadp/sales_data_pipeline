@@ -639,7 +639,7 @@ def get_tabela_forecast(df: pd.DataFrame) -> pd.DataFrame:
         "minimo_garantido",
         "receita_estimada_media",
         "receita_otimizada",
-        "modelo_origem",
+        "volume_vendas",
     ]
     return df[[c for c in colunas if c in df.columns]]
  
