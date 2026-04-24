@@ -782,8 +782,8 @@ elif secao == 'Forecasting':
                 "nome_fantasia": sim_expositor,
                 "area": sim_area,
                 "ticket_medio": sim_ticket,
-                "pct_comissao": sim_comissao,
-                "minimo_garantido": sim_minimo
+                "pct_comissao": sim_comissao / 100,
+                "minimo_garantido": sim_minimo 
             }
 
             # Roda o processamento pesado
