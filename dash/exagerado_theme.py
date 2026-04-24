@@ -816,6 +816,7 @@ def simulacao_card(resultado: dict):
     linhas         = resultado.get("linhas", [])
     ja_otimo       = resultado.get("ja_otimo", False)
     volume_vendas  = resultado.get("volume_vendas", 0)
+    ganho_real_medio = resultado.get("ganho_real_medio", 0)
  
     vale_a_pena = prob_atual >= 60
     if vale_a_pena:
@@ -830,6 +831,7 @@ def simulacao_card(resultado: dict):
         status_sub    = "Os parâmetros informados não são viáveis. Veja os cenários otimizados abaixo."
  
     meta_fmt = f"R$ {meta_teto:,.0f}" if isinstance(meta_teto, (int, float)) else str(meta_teto)
+    label_meta = "Receita Otimizada" if ja_otimo else "Meta para 60%"
 
     # ── coluna extra de volume (só quando ja_otimo) ────────────────────────
     if ja_otimo and volume_vendas:
@@ -844,6 +846,19 @@ def simulacao_card(resultado: dict):
     else:
         volume_col_html = ""
 
+    # ── coluna extra de ganho real medio (só quando ja_otimo) ────────────────────────
+    if ja_otimo and ganho_real_medio:
+        ganho_fmt = f"R$ {ganho_real_medio:,.2f}".replace(",", ".")
+        ganho_col_html = f"""
+        <div style="display:flex;flex-direction:column;padding:12px 16px;min-width:120px;flex:1;
+                    border-left:1px solid rgba(26,26,26,0.07);">
+            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">Ganho Real Médio</div>
+            <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{ganho_fmt}</div>
+        </div>
+        """
+    else:
+        ganho_col_html = ""
+
     # ── métricas do cenário atual ──────────────────────────────────────────
     metricas_html = f"""
     <div style="display:flex;flex-wrap:wrap;border-top:1px solid rgba(26,26,26,0.07);margin-top:14px;">
@@ -856,10 +871,11 @@ def simulacao_card(resultado: dict):
             <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{status_atual}</div>
         </div>
         <div style="display:flex;flex-direction:column;padding:12px 16px;min-width:120px;flex:1;">
-            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">Meta para 60%</div>
+            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">{label_meta}</div>
             <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{meta_fmt}</div>
         </div>
         {volume_col_html}
+        {ganho_col_html}
     </div>
     """
  

@@ -238,6 +238,7 @@ def rodar_etl_otimizacao(data) -> pd.DataFrame:
             'mg_atual':             resultado_df['minimo_garantido'].iloc[0],
             'yhat_trends':          round(yhat, 4),
             'volume_vendas':        resultado_mc.get("volume_vendas", 0),
+            'ganho_real_medio':     resultado_df['ganho_real_medio'].iloc[0],
             'data_simulacao':       pd.Timestamp.now()
         }
     else:
@@ -255,13 +256,14 @@ def rodar_etl_otimizacao(data) -> pd.DataFrame:
             'mg_atual':             resultado_df['minimo_garantido'].iloc[0],
             'yhat_trends':          round(yhat, 4),
             'volume_vendas':        otm.get("volume_vendas_base", 0),
+            'ganho_real_medio':     resultado_df['ganho_real_medio'].iloc[0],
             'data_simulacao':       pd.Timestamp.now()
         }
  
     df_viz = {k: df_db[k] for k in [
         "nome_fantasia", "status_atual", "prob_atual",
         "meta_teto_para_60pct", "tem_otimizacao", "ja_otimo",
-        "tem_tabela", "linhas", "volume_vendas"
+        "tem_tabela", "linhas", "volume_vendas", "ganho_real_medio"
     ]}
  
     logger.info(f"[ETL] ETL Completo para {data['nome_fantasia']}...")
