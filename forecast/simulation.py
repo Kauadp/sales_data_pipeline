@@ -29,8 +29,7 @@ def rodar_monte_carlo(
         threshold = minimo_garantido / percentual_comissao + minimo_garantido
 
         - receita <= threshold → empresa recebe só o minimo_garantido
-        - receita >  threshold → empresa recebe minimo_garantido
-                                 + (receita - threshold) * percentual_comissao
+        - receita >  threshold → empresa recebe receita - threshold
 
     prob_vale_a_pena_pct = % de simulações onde o expositor superou o threshold.
 
@@ -53,17 +52,12 @@ def rodar_monte_carlo(
         else np.inf
     )
 
-    ganhos = np.where(
-        receitas > threshold,
-        receitas - threshold,
-        minimo_garantido,
-    )
+    receita_mediana = float(np.percentile(receitas, 50))
+
+    ganho = minimo_garantido + max(0, receita_mediana - threshold)
 
     prob = (receitas > threshold).mean() * 100
 
-    # Volume de vendas: derivado da mediana das receitas já simuladas.
-    # Evita consumir o gerador após as simulações principais (seed contaminada).
-    receita_mediana = float(np.percentile(receitas, 50))
     volume_vendas = int(round(receita_mediana / ticket_medio, 0)) if ticket_medio > 0 else 0
 
     if prob >= 60:
@@ -77,9 +71,7 @@ def rodar_monte_carlo(
         "prob_vale_a_pena_pct": round(prob, 2),
         "status_decisao":       status,
         "receita_mediana":      round(receita_mediana, 2),
-        "receita_p10":          round(float(np.percentile(receitas, 10)), 2),
-        "receita_p90":          round(float(np.percentile(receitas, 90)), 2),
-        "ganho_medio":          round(float(ganhos.mean()), 2),
+        "ganho_medio":          round(ganho, 2),
         "threshold":            round(threshold, 2),
         "volume_vendas":        volume_vendas,
         "_receitas_dist":       receitas,
@@ -156,9 +148,9 @@ def melhores_parametros_otimizados(resultado: pd.DataFrame, n_simulacoes: int = 
             if meta_60_pct <= threshold:
                 continue
 
-            mask            = (receitas_arr > threshold) & ((receitas_arr - threshold) * comissao_teste > mg_teste)
+            mask            = receitas_arr > threshold
             prob            = mask.sum() / n_simulacoes * 100
-            receita_empresa = mg_teste + (meta_60_pct - threshold) * comissao_teste
+            receita_empresa = mg_teste + (meta_60_pct - threshold)
 
             candidato = {"prob": prob, "comissao": comissao_teste,
                          "mg": mg_teste, "threshold": threshold,

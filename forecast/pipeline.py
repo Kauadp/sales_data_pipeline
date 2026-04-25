@@ -228,7 +228,7 @@ def rodar_etl_otimizacao(data) -> pd.DataFrame:
             'nome_fantasia':        resultado_df['nome_fantasia'].iloc[0],
             'status_atual':         resultado_df['status_decisao'].iloc[0],
             'prob_atual':           resultado_df['prob_vale_a_pena_pct'].iloc[0],
-            'meta_teto_para_60pct': resultado_df['receita_otimizada'].iloc[0],
+            'receita_otimizada':    resultado_df['receita_otimizada'].iloc[0],
             'tem_otimizacao':       False,
             'ja_otimo':             ja_otimo,   # True = já vale a pena / False = sem cenário viável
             'tem_tabela':           False,
@@ -246,7 +246,7 @@ def rodar_etl_otimizacao(data) -> pd.DataFrame:
             'nome_fantasia':        otm['nome_fantasia'],
             'status_atual':         otm['status_atual'],
             'prob_atual':           otm['prob_atual'],
-            'meta_teto_para_60pct': otm['meta_teto_para_60pct'],
+            'receita_otimizada':    resultado_df['receita_otimizada'],
             'tem_otimizacao':       otm['tem_otimizacao'],
             'ja_otimo':             False,
             'tem_tabela':           otm['tem_tabela'],
@@ -262,8 +262,8 @@ def rodar_etl_otimizacao(data) -> pd.DataFrame:
  
     df_viz = {k: df_db[k] for k in [
         "nome_fantasia", "status_atual", "prob_atual",
-        "meta_teto_para_60pct", "tem_otimizacao", "ja_otimo",
-        "tem_tabela", "linhas", "volume_vendas", "ganho_real_medio"
+        "tem_otimizacao", "ja_otimo", "tem_tabela", "linhas",
+        "volume_vendas", "ganho_real_medio", "receita_otimizada"
     ]}
  
     logger.info(f"[ETL] ETL Completo para {data['nome_fantasia']}...")

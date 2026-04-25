@@ -794,11 +794,6 @@ def priority_header(tipo: str):
 def simulacao_card(resultado: dict):
     """
     Renderiza o card de resultado da simulação.
- 
-    O dict `resultado` é o retorno de rodar_etl_otimizacao() (df_viz).
-    Campos esperados: nome_fantasia, status_atual, prob_atual,
-                      meta_teto_para_60pct, tem_otimizacao, ja_otimo,
-                      tem_tabela, linhas, volume_vendas (opcional).
 
     Lógica de volume de vendas:
       - ja_otimo=True              → exibe volume_vendas como métrica extra ao lado das demais
@@ -810,13 +805,13 @@ def simulacao_card(resultado: dict):
     nome_fantasia  = resultado.get("nome_fantasia", "—")
     status_atual   = resultado.get("status_atual", "—")
     prob_atual     = resultado.get("prob_atual", 0)
-    meta_teto      = resultado.get("meta_teto_para_60pct", 0)
     tem_otimizacao = resultado.get("tem_otimizacao", False)
     tem_tabela     = resultado.get("tem_tabela", False)
     linhas         = resultado.get("linhas", [])
     ja_otimo       = resultado.get("ja_otimo", False)
     volume_vendas  = resultado.get("volume_vendas", 0)
     ganho_real_medio = resultado.get("ganho_real_medio", 0)
+    receita_otimizada = resultado.get("receita_otimizada", 0)
  
     vale_a_pena = prob_atual >= 60
     if vale_a_pena:
@@ -830,8 +825,8 @@ def simulacao_card(resultado: dict):
         status_label  = "❌ Não vale a pena"
         status_sub    = "Os parâmetros informados não são viáveis. Veja os cenários otimizados abaixo."
  
-    meta_fmt = f"R$ {meta_teto:,.0f}" if isinstance(meta_teto, (int, float)) else str(meta_teto)
-    label_meta = "Receita Otimizada" if ja_otimo else "Meta para 60%"
+    receita_mft = f"R$ {float(receita_otimizada):,.0f}"
+    label_receita = "Receita Otimizada"
 
     # ── coluna extra de volume (só quando ja_otimo) ────────────────────────
     if ja_otimo and volume_vendas:
@@ -871,8 +866,8 @@ def simulacao_card(resultado: dict):
             <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{status_atual}</div>
         </div>
         <div style="display:flex;flex-direction:column;padding:12px 16px;min-width:120px;flex:1;">
-            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">{label_meta}</div>
-            <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{meta_fmt}</div>
+            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6B6963;margin-bottom:6px;">{label_receita}</div>
+            <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:20px;color:#1A1A1A;line-height:1.1;">{receita_mft}</div>
         </div>
         {volume_col_html}
         {ganho_col_html}
