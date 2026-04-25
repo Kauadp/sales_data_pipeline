@@ -22,8 +22,6 @@ def run_pipeline():
     engine = get_engine(URL_DB)
     carregar_banco(df, engine)
 
-    pipelines_forecast = ["RJ_26"]
-
     query = f"""
         SELECT DISTINCT 
             e.id_expositor, 
@@ -37,13 +35,14 @@ def run_pipeline():
             AND f.area = e.area 
         WHERE e.percentual_comissao > 0
         AND f.id_expositor IS NULL 
+        AND e.pipeline = 'RJ_26'
         """
     
     df_novos = pd.read_sql(query, engine)
 
     if not df_novos.empty:
         df_novos["porte"] = df_novos["area"].apply(_definir_porte)
-        rodar_etl_oficial(engine, df_novos, pipeline_evento=pipelines_forecast)
+        rodar_etl_oficial(engine, df_novos)
 
 if __name__ == "__main__":
     run_pipeline()

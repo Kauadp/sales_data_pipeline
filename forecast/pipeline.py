@@ -38,7 +38,6 @@ VOLUME_POR_PONTO = 100000
 def rodar_etl_oficial(
     engine: Engine,
     df_expositores: pd.DataFrame,
-    pipeline_evento: str,
 ) -> pd.DataFrame:
     """
     ETL batch — roda para todos os expositores comissionados já na base.
