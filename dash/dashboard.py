@@ -101,6 +101,7 @@ with st.sidebar:
 try:
     if periodo == "Total":
         df = load_data_atual()
+        df_historico = df.copy()
     else: 
         df = load_data_historico()
         hoje = pd.Timestamp.now(tz="UTC").normalize()
@@ -114,6 +115,8 @@ try:
         elif periodo == "Mês":
             df["snapshot"] = pd.to_datetime(df["snapshot"], utc=True)
             df = df[df["snapshot"] >= hoje - pd.Timedelta(days=29)]
+
+        df_historico = df.copy()
 
         df = df.sort_values("snapshot").groupby("id_expositor").last().reset_index()
 except Exception as exc:
@@ -287,7 +290,7 @@ if secao == 'Comercial':
         fig_bar = bar_chart_enviados_assinados(df)
         chart_card('Contratos Enviados vs Assinados', fig_bar)
 
-    render_temporal_card(df, secao, meta, periodo)
+    render_temporal_card(df_historico, secao, meta, periodo)
     
 elif secao == 'Receita':
     st.title('Receita')
@@ -340,7 +343,7 @@ elif secao == 'Receita':
         fig_receita = chart_receita_prevista_realizada(df)
         chart_card('Receita Prevista vs Realizada', fig_receita)
 
-    render_temporal_card(df, secao, meta, periodo)
+    render_temporal_card(df_historico, secao, meta, periodo)
 
 elif secao == 'Descontos':
     st.title('Descontos')
@@ -373,7 +376,7 @@ elif secao == 'Descontos':
             'red'
         )
 
-    render_temporal_card(df, secao, meta, periodo)
+    render_temporal_card(df_historico, secao, meta, periodo)
 
 elif secao == 'Espaço':
     st.title('Espaço')
@@ -443,7 +446,7 @@ elif secao == 'Espaço':
         fig_scatter = chart_receita_area(df)
         chart_card('Receita vs Área', fig_scatter)
 
-    render_temporal_card(df, secao, meta, periodo)
+    render_temporal_card(df_historico, secao, meta, periodo)
 
 elif secao == 'Comissionado':
     st.title('Comissionado')
@@ -566,7 +569,7 @@ elif secao == 'Previsão':
     st.markdown('###')
     st.markdown('---')
 
-    render_temporal_card(df, secao, meta, periodo)
+    render_temporal_card(df_historico, secao, meta, periodo)
 
     section_header('Resumo Estratégico')
 
@@ -783,7 +786,7 @@ elif secao == 'Forecasting':
                 "area": sim_area,
                 "ticket_medio": sim_ticket,
                 "pct_comissao": sim_comissao / 100,
-                "minimo_garantido": sim_minimo 
+                "minimo_garantido": sim_minimo
             }
 
             # Roda o processamento pesado
